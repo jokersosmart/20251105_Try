@@ -168,6 +168,108 @@ ac  # 或 .\commit.ps1
 
 ---
 
+### 會話 5: 規格書澄清（兩輪共 8 個決策）
+
+**Prompt 1**: 
+```
+@speckit.clarify.agent.md [第一輪澄清]
+```
+
+**第一輪澄清決策（5 個）**:
+1. 資料儲存策略 → 純瀏覽器端儲存（IndexedDB/localStorage）
+2. 資料存取方式 → 官方 API（Instagram/Facebook Graph API）
+3. 使用者認證 → 應用程式層級授權（App Access Token）
+4. 自訂欄位類型 → 僅純文字欄位
+5. 錯誤恢復機制 → 自動續傳機制
+
+**Prompt 2**: 
+```
+@speckit.clarify.agent.md [第二輪實作細節澄清]
+```
+
+**第二輪澄清決策（3 個）**:
+1. IndexedDB 配額管理 → 警告機制（80%）+ 清理工具
+2. Token 保護機制 → 輕量後端代理層（Serverless Functions）
+3. 時間戳記顯示 → 本地時間（台灣 GMT+8）
+
+**執行內容**:
+- ✅ 完成 8 個關鍵決策的澄清
+- ✅ 重要架構調整：從純前端改為「前端為主 + 輕量後端代理」混合架構
+- ✅ 新增 3 個功能需求（FR-020, FR-021, FR-022）
+- ✅ 新增 2 個成功標準（SC-009, SC-010）
+- ✅ 新增 Storage Quota Status 實體
+- ✅ 更新 Assumptions 明確混合架構和 Token 保護
+- ✅ 更新 Constraints 包含後端部署和服務可用性
+- ✅ 更新 2 個 Edge Cases（配額管理、後端服務異常）
+- ✅ 更新技術參考方向包含 Serverless 選項
+
+**變更檔案**:
+- `specs/001-social-comment-scraper/spec.md` (更新)
+
+**Commit**: 3d2c0a8
+
+**架構決策影響**:
+
+**前端職責**:
+- UI 互動和資料展示
+- IndexedDB 本地儲存管理
+- 表格編輯和 Excel 匯出
+- 配額監控和清理工具
+
+**後端代理層職責**（新增）:
+- 安全保存 App Access Token
+- 代理 Instagram/Facebook API 呼叫
+- 實作速率限制和配額監控
+- 提供 RESTful 端點給前端
+
+**技術選項**:
+- Vercel Functions / AWS Lambda / Cloudflare Workers
+- 選擇標準：免費額度、冷啟動時間、整合度
+
+**下一步**: 執行 `/speckit.plan` 進行技術規劃
+
+---
+
+### 會話 6: 生成需求品質檢查清單
+
+**Prompt**: 
+```
+@speckit.checklist.agent.md [全面性審查]
+```
+
+**執行內容**:
+- ✅ 生成全面性需求品質檢查清單（100 項）
+- ✅ 焦點：全面檢查（API、資料、UX、效能、安全）
+- ✅ 深度：同儕審查標準
+- ✅ 特別關注：錯誤處理與恢復流程（8 個加強項目）
+
+**檢查項目分類**:
+- 需求完整性（10 項）
+- 需求清晰度（10 項）
+- 需求一致性（8 項）
+- 驗收標準品質（8 項）
+- 場景覆蓋度（14 項）
+- 邊界情況（13 項）
+- 非功能需求（15 項）
+- 依賴與假設（11 項）
+- 模糊性與衝突（6 項）
+- 可追溯性（5 項）
+
+**變更檔案**:
+- `specs/001-social-comment-scraper/checklists/comprehensive.md` (新建)
+
+**Commit**: d9c40b9
+
+**檢查清單特色**:
+- 遵循「Unit Tests for Requirements」原則
+- 測試需求品質而非實作行為
+- 100% 可追溯性（每項都標註檢查維度和規格章節）
+- 明確通過標準（85% 整體，100% 錯誤處理和安全）
+
+**下一步**: 團隊審查 → 技術規劃
+
+---
+
 ## 使用說明
 
 ### 更新此檔案
