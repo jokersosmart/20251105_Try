@@ -31,7 +31,39 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+This feature MUST comply with all constitution principles. Check each:
+
+### I. Code Quality & Maintainability
+- [ ] Linting and static analysis configured
+- [ ] Code complexity will be monitored (cyclomatic complexity <10)
+- [ ] Technical debt tracking plan defined
+- [ ] Code review checklist prepared
+
+### II. Testing Standards & Coverage
+- [ ] Test strategy defined (contract, integration, unit, performance)
+- [ ] Target coverage ≥80% (100% for critical paths)
+- [ ] TDD approach planned for implementation
+- [ ] Performance regression test plan defined
+
+### III. User Experience Consistency
+- [ ] Design system components identified and documented
+- [ ] Error handling and user feedback patterns defined
+- [ ] Accessibility requirements documented (WCAG 2.1 AA)
+- [ ] Loading states and performance feedback planned
+
+### IV. Performance Requirements & Optimization
+- [ ] Performance targets defined and measurable
+- [ ] Database indexing strategy planned
+- [ ] Caching strategy defined
+- [ ] Performance monitoring plan established
+
+### V. Documentation & Localization Standards
+- [ ] All specifications written in Traditional Chinese (zh-TW)
+- [ ] User stories and scenarios in Traditional Chinese
+- [ ] UI text and error messages planned in Traditional Chinese
+- [ ] Terminology glossary prepared for consistent translation
+
+**Violations requiring justification**: [List any complexity or exceptions needed, with rationale]
 
 ## Project Structure
 

@@ -10,6 +10,16 @@ handoffs:
     prompt: Create a checklist for the following domain...
 ---
 
+## 語言要求 / Language Requirement
+
+**重要**: 根據專案憲章第五項原則，所有輸出內容必須使用繁體中文（zh-TW）。
+
+- ✅ 實作計劃內容必須使用繁體中文
+- ✅ 技術分析和決策說明必須使用繁體中文
+- ✅ 所有文檔（research.md、data-model.md、quickstart.md）必須使用繁體中文
+- ⚠️ 技術術語可保留英文（如 Python、FastAPI、PostgreSQL）
+- ⚠️ 程式碼範例和 API 規格保持英文
+
 ## User Input
 
 ```text

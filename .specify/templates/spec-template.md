@@ -113,3 +113,24 @@
 - **SC-002**: [Measurable metric, e.g., "System handles 1000 concurrent users without degradation"]
 - **SC-003**: [User satisfaction metric, e.g., "90% of users successfully complete primary task on first attempt"]
 - **SC-004**: [Business metric, e.g., "Reduce support tickets related to [X] by 50%"]
+
+### Constitution Compliance *(mandatory)*
+
+**Per Constitution Principles**:
+
+- **Code Quality**: Code coverage target [e.g., 80% minimum, 100% for critical paths]
+- **Testing Standards**: Test types required [contract/integration/unit/performance]
+- **UX Consistency**: 
+  - User feedback response time: <100ms for interactions
+  - Loading indicators for operations >300ms
+  - WCAG 2.1 AA accessibility compliance
+  - Error messages: user-friendly and actionable
+- **Performance Requirements**:
+  - Page load time: [target, e.g., <2s p95]
+  - API response time: [target, e.g., <200ms p95 read, <500ms p95 write]
+  - Resource usage: [targets for CPU, memory, bundle size]
+- **Documentation & Localization**:
+  - This specification MUST be written in Traditional Chinese (zh-TW)
+  - All user stories MUST be in Traditional Chinese
+  - All UI text MUST be in Traditional Chinese
+  - Error messages MUST be in Traditional Chinese with clear guidance
