@@ -1,0 +1,400 @@
+openapi: 3.0.3
+info:
+  title: 社群留言爬蟲工具 - 後端 API 代理
+  description: |
+    後端 Serverless Functions API，負責代理 Instagram 和 Facebook Graph API 呼叫。
+    保護 App Access Token 安全，實作速率限制和錯誤處理。
+    所有錯誤訊息使用繁體中文。
+  version: 1.0.0
+  contact:
+    name: 開發團隊
+    
+servers:
+  - url: https://your-app.vercel.app/api
+    description: Production（Vercel 部署）
+  - url: http://localhost:3000/api
+    description: 本地開發環境
+
+tags:
+  - name: Instagram
+    description: Instagram 爬蟲 API
+  - name: Facebook  
+    description: Facebook 爬蟲 API
+  - name: Health
+    description: 服務健康檢查
+
+paths:
+  /instagram/scrape:
+    post:
+      tags:
+        - Instagram
+      summary: 爬取 Instagram 貼文留言
+      description: |
+        代理 Instagram Graph API，取得指定貼文的留言資料。
+        支援分頁和續傳機制。
+      operationId: scrapeInstagram
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - postUrl
+              properties:
+                postUrl:
+                  type: string
+                  description: Instagram 貼文完整網址
+                  example: "https://www.instagram.com/p/ABC123xyz/"
+                cursor:
+                  type: string
+                  description: 分頁 cursor（用於續傳或分頁載入）
+                  example: "QVFIUkhBS..."
+                limit:
+                  type: integer
+                  description: 每頁留言數量（最大 50）
+                  default: 50
+                  minimum: 1
+                  maximum: 50
+      responses:
+        '200':
+          description: 成功取得留言資料
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      comments:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/InstagramComment'
+                      paging:
+                        type: object
+                        properties:
+                          cursors:
+                            type: object
+                            properties:
+                              after:
+                                type: string
+                                description: 下一頁 cursor
+                          next:
+                            type: string
+                            description: 下一頁 API 網址
+                      postInfo:
+                        $ref: '#/components/schemas/PostInfo'
+        '400':
+          description: 請求參數錯誤
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                success: false
+                error: "網址格式不正確"
+                message: "請輸入有效的 Instagram 貼文網址，格式為 https://www.instagram.com/p/..."
+        '429':
+          description: 速率限制
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitError'
+              example:
+                success: false
+                error: "請求過於頻繁"
+                message: "平台暫時限制存取，請等待 15 分鐘後再試"
+                retryAfter: 900
+        '500':
+          description: 伺服器錯誤
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                success: false
+                error: "服務暫時無法使用"
+                message: "後端服務發生錯誤，請稍後再試或聯繫技術支援"
+
+  /facebook/scrape:
+    post:
+      tags:
+        - Facebook
+      summary: 爬取 Facebook 貼文留言
+      description: |
+        代理 Facebook Graph API，取得指定貼文的留言資料。
+        支援分頁和續傳機制。
+      operationId: scrapeFacebook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - postUrl
+              properties:
+                postUrl:
+                  type: string
+                  description: Facebook 貼文完整網址
+                  example: "https://www.facebook.com/pagename/posts/123456789"
+                cursor:
+                  type: string
+                  description: 分頁 cursor
+                limit:
+                  type: integer
+                  description: 每頁留言數量（最大 100）
+                  default: 100
+                  minimum: 1
+                  maximum: 100
+      responses:
+        '200':
+          description: 成功取得留言資料
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      comments:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/FacebookComment'
+                      paging:
+                        type: object
+                        properties:
+                          cursors:
+                            type: object
+                            properties:
+                              after:
+                                type: string
+                          next:
+                            type: string
+                      postInfo:
+                        $ref: '#/components/schemas/PostInfo'
+        '400':
+          $ref: '#/paths/~1instagram~1scrape/post/responses/400'
+        '429':
+          $ref: '#/paths/~1instagram~1scrape/post/responses/429'
+        '500':
+          $ref: '#/paths/~1instagram~1scrape/post/responses/500'
+
+  /health:
+    get:
+      tags:
+        - Health
+      summary: 服務健康檢查
+      description: 檢查後端代理服務是否正常運作
+      operationId: healthCheck
+      responses:
+        '200':
+          description: 服務正常
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  version:
+                    type: string
+                    example: "1.0.0"
+                  services:
+                    type: object
+                    properties:
+                      instagram:
+                        type: string
+                        enum: [available, unavailable]
+                      facebook:
+                        type: string
+                        enum: [available, unavailable]
+        '503':
+          description: 服務不可用
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "error"
+                  message:
+                    type: string
+                    example: "後端服務暫時無法使用"
+
+components:
+  schemas:
+    InstagramComment:
+      type: object
+      required:
+        - id
+        - username
+        - text
+        - timestamp
+      properties:
+        id:
+          type: string
+          description: Instagram 留言 ID
+          example: "17893857392847501"
+        username:
+          type: string
+          description: 留言者使用者名稱
+          example: "john_doe"
+        text:
+          type: string
+          description: 留言內容
+          example: "這個產品很不錯！👍"
+        timestamp:
+          type: string
+          format: date-time
+          description: 留言時間（UTC）
+          example: "2025-11-18T10:30:00Z"
+        like_count:
+          type: integer
+          description: 按讚數
+          example: 5
+        replies:
+          type: object
+          description: 回覆資訊
+          properties:
+            data:
+              type: array
+              items:
+                type: object
+
+    FacebookComment:
+      type: object
+      required:
+        - id
+        - from
+        - message
+        - created_time
+      properties:
+        id:
+          type: string
+          description: Facebook 留言 ID
+          example: "123456789_987654321"
+        from:
+          type: object
+          properties:
+            name:
+              type: string
+              description: 留言者姓名
+              example: "王小明"
+            id:
+              type: string
+              description: 留言者 ID
+              example: "123456789"
+        message:
+          type: string
+          description: 留言內容
+          example: "很棒的分享！"
+        created_time:
+          type: string
+          format: date-time
+          description: 留言時間（UTC）
+          example: "2025-11-18T08:20:00+0000"
+        like_count:
+          type: integer
+          description: 按讚數
+          example: 3
+        comment_count:
+          type: integer
+          description: 回覆數
+          example: 1
+
+    PostInfo:
+      type: object
+      description: 貼文基本資訊
+      properties:
+        postId:
+          type: string
+          description: 貼文 ID
+        url:
+          type: string
+          description: 貼文網址
+        platform:
+          type: string
+          enum: [instagram, facebook]
+        totalComments:
+          type: integer
+          description: 預估總留言數（若 API 提供）
+
+    Error:
+      type: object
+      required:
+        - success
+        - error
+        - message
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          description: 錯誤類型（英文，用於程式判斷）
+          example: "INVALID_URL"
+        message:
+          type: string
+          description: 使用者友善的錯誤訊息（繁體中文）
+          example: "網址格式不正確，請確認為 https://www.instagram.com/p/... 或 https://www.facebook.com/... 格式"
+        details:
+          type: object
+          description: 額外的錯誤詳情（開發用）
+
+    RateLimitError:
+      type: object
+      required:
+        - success
+        - error
+        - message
+        - retryAfter
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: "RATE_LIMIT_EXCEEDED"
+        message:
+          type: string
+          description: 繁體中文錯誤訊息
+          example: "平台暫時限制存取，請等待 15 分鐘後再試"
+        retryAfter:
+          type: integer
+          description: 建議重試等待時間（秒）
+          example: 900
+        currentUsage:
+          type: object
+          description: 目前配額使用情況
+          properties:
+            used:
+              type: integer
+            limit:
+              type: integer
+            resetAt:
+              type: string
+              format: date-time
+
+  securitySchemes:
+    OriginCheck:
+      type: apiKey
+      in: header
+      name: Origin
+      description: 驗證請求來源，僅允許白名單域名
+
+security:
+  - OriginCheck: []
+

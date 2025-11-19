@@ -1,0 +1,649 @@
+# Instagram/Facebook Graph API 整合契約
+
+## 文件說明
+
+本文件定義後端 API 代理層與 Instagram/Facebook Graph API 的整合規格。
+包含端點、請求格式、回應處理和錯誤映射。
+
+---
+
+## Instagram Graph API 整合
+
+### API 版本
+- **版本**: v18.0（或更新穩定版）
+- **Base URL**: `https://graph.facebook.com/v18.0`
+- **文件**: https://developers.facebook.com/docs/instagram-api
+
+### 權限需求
+- `instagram_basic`: 基本資料存取
+- `instagram_manage_comments`: 留言資料存取
+
+### 端點 1: 取得貼文留言
+
+**請求**:
+```
+GET https://graph.facebook.com/v18.0/{media-id}/comments
+```
+
+**必要參數**:
+- `access_token`: App Access Token（從環境變數取得）
+- `fields`: `id,username,text,timestamp,like_count,replies`
+
+**選用參數**:
+- `after`: 分頁 cursor（續傳使用）
+- `limit`: 每頁數量（預設 25，最大 50）
+
+**請求範例**:
+```
+GET /17893857392847501/comments?access_token=XXX&fields=id,username,text,timestamp,like_count,replies&limit=50
+```
+
+**成功回應**（200 OK）:
+```json
+{
+  "data": [
+    {
+      "id": "17893857392847501",
+      "username": "john_doe",
+      "text": "很棒的照片！",
+      "timestamp": "2025-11-18T10:30:00+0000",
+      "like_count": 5,
+      "replies": {
+        "data": []
+      }
+    }
+  ],
+  "paging": {
+    "cursors": {
+      "before": "QVFIUkhBU...",
+      "after": "QVFIUkY3d..."
+    },
+    "next": "https://graph.facebook.com/v18.0/..."
+  }
+}
+```
+
+**錯誤回應**:
+```json
+{
+  "error": {
+    "message": "Invalid OAuth access token.",
+    "type": "OAuthException",
+    "code": 190,
+    "fbtrace_id": "..."
+  }
+}
+```
+
+### 錯誤碼映射（Instagram）
+
+| API Error Code | 類型 | 繁體中文訊息 | 處理方式 |
+|---------------|------|-------------|---------|
+| 190 | OAuthException | Token 無效或過期，請聯繫技術支援 | 記錄錯誤，通知管理員 |
+| 4 | API Too Many Calls | 請求過於頻繁，請等待 X 分鐘後再試 | 返回 429，顯示 retryAfter |
+| 100 | Invalid Parameter | 貼文網址格式不正確 | 返回 400，要求重新輸入 |
+| 803 | Cannot Access Media | 此貼文為私人貼文或無法存取 | 返回 403，說明原因 |
+| 10 | Permission Denied | 權限不足，無法存取此貼文 | 返回 403，說明權限問題 |
+
+---
+
+## Facebook Graph API 整合
+
+### API 版本
+- **版本**: v18.0（或更新穩定版）
+- **Base URL**: `https://graph.facebook.com/v18.0`
+- **文件**: https://developers.facebook.com/docs/graph-api
+
+### 權限需求
+- `pages_read_engagement`: 讀取粉絲專頁互動資料
+
+### 端點 1: 取得貼文留言
+
+**請求**:
+```
+GET https://graph.facebook.com/v18.0/{post-id}/comments
+```
+
+**必要參數**:
+- `access_token`: App Access Token
+- `fields`: `id,from{name,id},message,created_time,like_count,comment_count`
+
+**選用參數**:
+- `after`: 分頁 cursor
+- `limit`: 每頁數量（預設 25，最大 100）
+- `order`: `chronological` 或 `reverse_chronological`
+
+**請求範例**:
+```
+GET /123456789_987654321/comments?access_token=XXX&fields=id,from,message,created_time,like_count,comment_count&limit=100
+```
+
+**成功回應**（200 OK）:
+```json
+{
+  "data": [
+    {
+      "id": "123456789_111111111",
+      "from": {
+        "name": "王小明",
+        "id": "987654321"
+      },
+      "message": "很實用的資訊！",
+      "created_time": "2025-11-18T08:20:00+0000",
+      "like_count": 3,
+      "comment_count": 1
+    }
+  ],
+  "paging": {
+    "cursors": {
+      "before": "MAZDZD",
+      "after": "MQZDZD"
+    },
+    "next": "https://graph.facebook.com/v18.0/..."
+  }
+}
+```
+
+### 錯誤碼映射（Facebook）
+
+| API Error Code | 類型 | 繁體中文訊息 | 處理方式 |
+|---------------|------|-------------|---------|
+| 190 | OAuthException | Token 無效，請聯繫技術支援 | 記錄錯誤，通知管理員 |
+| 4 | API Too Many Calls | 請求過於頻繁，請稍後再試 | 返回 429 + retryAfter |
+| 100 | Invalid Parameter | 貼文 ID 格式不正確 | 返回 400 |
+| 200 | Permission Denied | 此貼文為私人或權限不足 | 返回 403 |
+| 803 | Cannot Access Object | 貼文不存在或已被刪除 | 返回 404 |
+| 2 | Temporary Error | 暫時性錯誤，請稍後再試 | 返回 503，可重試 |
+
+---
+
+## 速率限制處理
+
+### Instagram 速率限制
+
+**配額**:
+- 200 calls/hour per app（應用程式層級）
+- 回應 header 中的 `x-app-usage`:
+  ```json
+  {
+    "call_count": 45,
+    "total_cputime": 25,
+    "total_time": 10
+  }
+  ```
+
+**處理邏輯**:
+```typescript
+// 後端代理層
+function parseAppUsage(headers) {
+  const usage = JSON.parse(headers['x-app-usage']);
+  const callPercent = usage.call_count;
+  
+  if (callPercent > 90) {
+    // 接近限制，觸發節流
+    return { shouldThrottle: true, usage: callPercent };
+  }
+  
+  return { shouldThrottle: false, usage: callPercent };
+}
+```
+
+### Facebook 速率限制
+
+**配額**:
+- 依應用程式等級（Basic: 200 calls/hour）
+- 回應 header 中的 `x-app-usage` 和 `x-ad-account-usage`
+
+**超過限制時**:
+- API 回傳 `429 Too Many Requests`
+- Header 包含 `retry-after`（秒數）
+- 後端代理需解析並傳遞給前端
+
+---
+
+## 請求流程
+
+### 完整請求流程（Instagram 範例）
+
+```
+1. 前端發起請求
+   POST /api/instagram/scrape
+   { postUrl: "https://www.instagram.com/p/ABC123/" }
+   
+2. 後端代理驗證
+   - 檢查 Origin header（CORS）
+   - 檢查速率限制（Token Bucket）
+   - 解析 postUrl 取得 media-id
+   
+3. 呼叫 Instagram Graph API
+   GET https://graph.facebook.com/v18.0/{media-id}/comments
+   Authorization: Bearer {APP_ACCESS_TOKEN}
+   
+4. 處理回應
+   - 成功：轉換資料格式，返回前端
+   - 錯誤：映射為繁體中文錯誤訊息
+   
+5. 更新速率限制狀態
+   - 解析 x-app-usage header
+   - 更新 Token Bucket
+   
+6. 返回前端
+   { success: true, data: {...} }
+```
+
+### 錯誤處理流程
+
+```
+1. API 回傳錯誤
+   
+2. 後端代理解析錯誤碼
+   
+3. 映射為繁體中文訊息
+   error code 190 → "Token 無效"
+   error code 4 → "請求過於頻繁"
+   
+4. 構建統一錯誤回應
+   {
+     success: false,
+     error: "RATE_LIMIT_EXCEEDED",
+     message: "請求過於頻繁，請等待 15 分鐘後再試",
+     retryAfter: 900
+   }
+   
+5. 返回前端顯示
+```
+
+---
+
+## URL 解析規則
+
+### Instagram URL 格式
+
+**標準格式**:
+```
+https://www.instagram.com/p/{media-id}/
+https://instagram.com/p/{media-id}/
+```
+
+**解析邏輯**:
+```typescript
+function parseInstagramUrl(url: string): string | null {
+  const regex = /instagram\.com\/p\/([A-Za-z0-9_-]+)/;
+  const match = url.match(regex);
+  return match ? match[1] : null;
+}
+
+// 範例
+parseInstagramUrl("https://www.instagram.com/p/ABC123xyz/")
+// 返回: "ABC123xyz"
+```
+
+### Facebook URL 格式
+
+**可能格式**:
+```
+https://www.facebook.com/{page-name}/posts/{post-id}
+https://www.facebook.com/{page-id}/posts/{post-id}
+https://www.facebook.com/permalink.php?story_fbid={post-id}&id={page-id}
+https://www.facebook.com/photo.php?fbid={photo-id}&set=...
+```
+
+**解析邏輯**（較複雜）:
+```typescript
+function parseFacebookUrl(url: string): string | null {
+  // 格式 1: /posts/
+  const postsRegex = /facebook\.com\/[\w.-]+\/posts\/(\d+)/;
+  let match = url.match(postsRegex);
+  if (match) return match[1];
+  
+  // 格式 2: permalink.php
+  const permalinkRegex = /story_fbid=(\d+)/;
+  match = url.match(permalinkRegex);
+  if (match) return match[1];
+  
+  // 格式 3: 完整 post ID（page_id_post_id）
+  const fullIdRegex = /(\d+_\d+)/;
+  match = url.match(fullIdRegex);
+  if (match) return match[1];
+  
+  return null;
+}
+```
+
+---
+
+## 資料轉換與正規化
+
+### Instagram 資料轉換
+
+**從 API 回應轉換為內部格式**:
+```typescript
+function normalizeInstagramComment(apiComment: any): Comment {
+  return {
+    commentId: apiComment.id,
+    commenterName: apiComment.username,
+    commenterAvatar: `https://www.instagram.com/${apiComment.username}/`, // 推估
+    commenterId: apiComment.user_id || '',
+    content: apiComment.text,
+    timestamp: new Date(apiComment.timestamp),
+    likeCount: apiComment.like_count || 0,
+    replyCount: apiComment.replies?.data?.length || 0,
+    isEdited: false,
+    customFields: {},
+    createdAt: new Date()
+  };
+}
+```
+
+### Facebook 資料轉換
+
+```typescript
+function normalizeFacebookComment(apiComment: any): Comment {
+  return {
+    commentId: apiComment.id,
+    commenterName: apiComment.from.name,
+    commenterAvatar: `https://graph.facebook.com/${apiComment.from.id}/picture`,
+    commenterId: apiComment.from.id,
+    content: apiComment.message,
+    timestamp: new Date(apiComment.created_time),
+    likeCount: apiComment.like_count || 0,
+    replyCount: apiComment.comment_count || 0,
+    isEdited: false,
+    customFields: {},
+    createdAt: new Date()
+  };
+}
+```
+
+---
+
+## 測試契約（Contract Testing）
+
+### Mock Service Worker (MSW) 設定
+
+**用途**: 在測試環境中模擬 Graph API 回應
+
+```typescript
+// frontend/tests/mocks/graph-api.ts
+import { rest } from 'msw';
+
+export const graphApiHandlers = [
+  // Mock Instagram API
+  rest.get('https://graph.facebook.com/v18.0/:mediaId/comments', (req, res, ctx) => {
+    return res(
+      ctx.status(200),
+      ctx.json({
+        data: [
+          {
+            id: "test_comment_1",
+            username: "test_user",
+            text: "測試留言",
+            timestamp: "2025-11-18T10:30:00+0000",
+            like_count: 5
+          }
+        ],
+        paging: {
+          cursors: { after: "next_cursor" }
+        }
+      })
+    );
+  }),
+  
+  // Mock Facebook API
+  rest.get('https://graph.facebook.com/v18.0/:postId/comments', (req, res, ctx) => {
+    return res(
+      ctx.status(200),
+      ctx.json({
+        data: [
+          {
+            id: "123_456",
+            from: { name: "測試使用者", id: "123" },
+            message: "測試留言內容",
+            created_time: "2025-11-18T08:20:00+0000",
+            like_count: 3
+          }
+        ]
+      })
+    );
+  })
+];
+```
+
+### 契約測試案例
+
+**測試 1: 驗證 API 回應格式**
+```typescript
+describe('Instagram API Contract', () => {
+  it('應返回符合預期格式的留言資料', async () => {
+    const response = await fetch('/api/instagram/scrape', {
+      method: 'POST',
+      body: JSON.stringify({ postUrl: 'https://www.instagram.com/p/TEST/' })
+    });
+    
+    const data = await response.json();
+    
+    expect(data).toHaveProperty('success', true);
+    expect(data.data.comments).toBeInstanceOf(Array);
+    expect(data.data.comments[0]).toHaveProperty('id');
+    expect(data.data.comments[0]).toHaveProperty('username');
+    expect(data.data.comments[0]).toHaveProperty('text');
+  });
+});
+```
+
+**測試 2: 驗證錯誤處理**
+```typescript
+it('應正確處理無效網址錯誤', async () => {
+  const response = await fetch('/api/instagram/scrape', {
+    method: 'POST',
+    body: JSON.stringify({ postUrl: 'invalid-url' })
+  });
+  
+  const data = await response.json();
+  
+  expect(data.success).toBe(false);
+  expect(data.error).toBe('INVALID_URL');
+  expect(data.message).toContain('網址格式不正確');
+});
+```
+
+**測試 3: 驗證速率限制處理**
+```typescript
+it('應正確處理速率限制', async () => {
+  // 模擬達到速率限制
+  server.use(
+    rest.get('*/comments', (req, res, ctx) => {
+      return res(
+        ctx.status(429),
+        ctx.json({
+          error: {
+            code: 4,
+            message: "API Too Many Calls"
+          }
+        })
+      );
+    })
+  );
+  
+  const response = await fetch('/api/instagram/scrape', {
+    method: 'POST',
+    body: JSON.stringify({ postUrl: 'https://www.instagram.com/p/TEST/' })
+  });
+  
+  const data = await response.json();
+  
+  expect(response.status).toBe(429);
+  expect(data.message).toContain('請等待');
+  expect(data).toHaveProperty('retryAfter');
+});
+```
+
+---
+
+## 快取策略
+
+### 後端 API 回應快取
+
+**策略**: 短時間記憶體快取（5 分鐘）
+
+**目的**:
+- 減少重複 API 呼叫
+- 節省 API 配額
+- 提升回應速度
+
+**實作**:
+```typescript
+import NodeCache from 'node-cache';
+
+const cache = new NodeCache({ 
+  stdTTL: 300,  // 5 分鐘
+  checkperiod: 60 
+});
+
+async function getComments(mediaId: string, cursor?: string) {
+  const cacheKey = `${mediaId}_${cursor || 'first'}`;
+  
+  // 檢查快取
+  const cached = cache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+  
+  // 呼叫 API
+  const response = await callGraphAPI(mediaId, cursor);
+  
+  // 儲存快取
+  cache.set(cacheKey, response);
+  
+  return response;
+}
+```
+
+**快取失效**:
+- 5 分鐘自動過期
+- 使用者手動「更新留言」時清除特定貼文快取
+- 批次爬取不使用快取（確保最新資料）
+
+---
+
+## 安全性考量
+
+### Token 保護
+
+**儲存位置**:
+```bash
+# Vercel 環境變數
+INSTAGRAM_APP_TOKEN=your_instagram_token
+FACEBOOK_APP_TOKEN=your_facebook_token
+```
+
+**存取方式**:
+```typescript
+// 僅在後端代理層存取
+const token = process.env.INSTAGRAM_APP_TOKEN;
+
+// ❌ 絕對不可在前端存取或暴露
+```
+
+### CORS 設定
+
+**允許的來源**:
+```typescript
+const allowedOrigins = [
+  'https://your-app.vercel.app',
+  'http://localhost:5173',  // 開發環境
+  'http://localhost:3000'
+];
+
+function checkOrigin(origin: string): boolean {
+  return allowedOrigins.includes(origin);
+}
+```
+
+### 輸入驗證
+
+**後端必須驗證**:
+- URL 格式正確
+- 參數類型正確（limit 是數字）
+- Cursor 格式有效（若提供）
+
+**防止注入攻擊**:
+- 使用參數化查詢
+- 驗證所有輸入
+- 清理特殊字元
+
+---
+
+## 監控與日誌
+
+### 需要記錄的事件
+
+**成功事件**:
+- API 呼叫成功（記錄 postUrl, platform, commentCount, duration）
+- 配額使用情況（每小時統計）
+
+**錯誤事件**:
+- API 錯誤（記錄 error code, message, postUrl）
+- 速率限制觸發（記錄時間、使用者 IP）
+- Token 失效（立即通知管理員）
+
+**效能指標**:
+- API 回應時間（p50, p95, p99）
+- 快取命中率
+- 錯誤率
+
+### Sentry 整合
+
+```typescript
+import * as Sentry from '@sentry/node';
+
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  environment: process.env.VERCEL_ENV
+});
+
+// 記錄 API 錯誤
+Sentry.captureException(error, {
+  tags: {
+    platform: 'instagram',
+    endpoint: 'comments'
+  },
+  extra: {
+    postUrl,
+    errorCode: error.code
+  }
+});
+```
+
+---
+
+## 附錄：完整錯誤碼對照表
+
+### Instagram Graph API 錯誤碼
+
+| Code | 類型 | 說明 | 繁體中文訊息 |
+|------|------|------|-------------|
+| 100 | Invalid Parameter | 參數錯誤 | 貼文網址格式不正確 |
+| 190 | OAuth Exception | Token 問題 | 認證失敗，請聯繫技術支援 |
+| 4 | Too Many Calls | 速率限制 | 請求過於頻繁，請等待 {X} 分鐘 |
+| 10 | Permission Denied | 權限不足 | 無權存取此貼文 |
+| 803 | Cannot Access | 無法存取 | 此貼文為私人或已被刪除 |
+| 2 | Temporary Error | 暫時性錯誤 | 服務暫時無法使用，請稍後再試 |
+
+### Facebook Graph API 錯誤碼
+
+| Code | 類型 | 說明 | 繁體中文訊息 |
+|------|------|------|-------------|
+| 100 | Invalid Parameter | 參數錯誤 | 貼文 ID 格式不正確 |
+| 190 | OAuth Exception | Token 問題 | 認證失敗，請聯繫技術支援 |
+| 4 | Too Many Calls | 速率限制 | 請求過於頻繁，請等待 {X} 分鐘 |
+| 200 | Permission Denied | 權限不足 | 此貼文為私人貼文或權限不足 |
+| 803 | Cannot Access | 無法存取 | 貼文不存在或已被移除 |
+| 2 | Temporary Error | 暫時性錯誤 | 暫時性錯誤，請稍後再試 |
+| 613 | Rate Limit | 呼叫次數超限 | API 呼叫次數已達上限 |
+
+---
+
+**文件完成時間**: 2025-11-19  
+**下一個文件**: quickstart.md（快速開始指南）
+
