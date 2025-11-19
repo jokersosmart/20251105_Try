@@ -610,6 +610,93 @@ chcp 65001
 
 ---
 
+### 會話 12: 開發環境準備
+
+**Prompt**: 
+```
+請繼續下個階段
+選擇：A（協助準備開發環境）
+```
+
+**執行內容**:
+- ✅ 建立專案根目錄：`social-comment-scraper/`
+- ✅ 建立子目錄結構：frontend/, api/, docs/, .github/
+- ✅ 執行環境檢查（Node.js, npm, Git）
+- ✅ 生成完整的開發環境準備指南（7 個步驟）
+
+**環境檢查結果**:
+- ✅ Node.js: v24.11.0（超過要求的 ≥18）
+- ✅ npm: 11.6.1（超過要求的 ≥9）
+- ✅ Git: 2.51.2（版本良好）
+- ✅ 編碼設定：已修復（會話 8-9）
+
+**開發環境準備指南內容**:
+
+**步驟 1: Meta 開發者帳號申請**（15 分鐘）
+- 註冊流程
+- 身分驗證
+- 帳號設定
+
+**步驟 2: 取得 API Token**（30 分鐘）⭐ 關鍵
+- 建立應用程式（社群留言爬蟲工具）
+- 新增 Instagram 和 Facebook 產品
+- 取得 App Access Token（2 種方法）
+- 申請必要權限：
+  - Instagram: `instagram_basic`, `instagram_manage_comments`
+  - Facebook: `pages_read_engagement`
+- 準備隱私政策和使用條款（含範本）
+- 提交審核（預計 3-5 天）
+
+**步驟 3: 安裝開發工具**（20 分鐘）
+- Node.js 18+（已安裝 ✅）
+- pnpm（推薦）
+- Vercel CLI
+- VS Code 擴充套件（8 個）
+- Git（已安裝 ✅）
+
+**步驟 4: 驗證環境**（10 分鐘）
+- 8 項檢查清單
+- 全部通過 ✅
+
+**步驟 5: 初始化專案**（15 分鐘）
+- Git init
+- 建立 frontend（Vite + React + TypeScript）
+- 安裝依賴套件（Dexie, AG Grid, SheetJS, etc.）
+- 設定環境變數（.env.local）
+- 建立 .gitignore
+
+**步驟 6: 測試 API 連線**
+- Instagram API 測試
+- Facebook API 測試
+- 錯誤處理檢查
+
+**步驟 7: 初始 Commit**
+- 提交初始專案結構
+
+**重要提醒**:
+- ⚠️ API 審核需要 3-5 天
+- ✅ 審核期間可使用 Mock API 開發前端
+- ✅ 環境已準備就緒
+
+**變更檔案**:
+- `social-comment-scraper/開發環境準備指南.md` (新建，~730 行)
+- `social-comment-scraper/` 目錄結構（frontend/, api/, docs/, .github/）
+
+**Commit**: 46a6d9c
+
+**當前狀態**:
+- 專案目錄：已建立 ✅
+- 環境檢查：全部通過 ✅
+- 準備指南：已完成 ✅
+- API 申請：待執行 ⏳
+
+**下一步**:
+1. 申請 Meta API（按照指南步驟 2）
+2. 審核期間：初始化 frontend 專案（步驟 5）
+3. 開始實作 Setup 任務（T002-T010）
+
+---
+
 ## 使用說明
 
 ### 更新此檔案
