@@ -67,7 +67,48 @@
 2. 建立 History.md 記錄對話歷史
 3. 設置自動 commit 機制
 
-**執行內容**: 進行中...
+**執行內容**:
+- ✅ 建立 History.md 對話歷史記錄檔案
+- ✅ 建立自動 commit 腳本（auto-commit.ps1）
+- ✅ 建立自動 commit 設定腳本（setup-auto-commit.ps1）
+- ✅ 建立快捷腳本（commit.ps1）
+- ✅ 更新所有主要 Agent 檔案以預設輸出繁體中文
+  - speckit.specify.agent.md
+  - speckit.plan.agent.md
+  - speckit.tasks.agent.md
+- ✅ 建立完整的使用指南（README-中文化與自動提交.md）
+- ✅ 建立 .gitignore 檔案
+
+**變更檔案**:
+- `History.md` (新建)
+- `.specify/scripts/powershell/auto-commit.ps1` (新建)
+- `.specify/scripts/powershell/setup-auto-commit.ps1` (新建)
+- `commit.ps1` (新建)
+- `.github/agents/speckit.specify.agent.md` (更新)
+- `.github/agents/speckit.plan.agent.md` (更新)
+- `.github/agents/speckit.tasks.agent.md` (更新)
+- `README-中文化與自動提交.md` (新建)
+- `.gitignore` (新建)
+
+**Commit**: e8d6b2e
+
+**功能說明**:
+
+1. **繁體中文化**：所有 Agent 現在預設輸出繁體中文內容
+2. **自動提交**：可使用 `ac` 或 `.\commit.ps1` 快速提交變更
+3. **對話記錄**：使用 History.md 追蹤所有重要對話
+
+**使用方式**:
+```powershell
+# 設定自動提交（僅需執行一次）
+.\.specify\scripts\powershell\setup-auto-commit.ps1
+
+# 重新載入 Profile
+. $PROFILE
+
+# 之後每次提交只需：
+ac  # 或 .\commit.ps1
+```
 
 ---
 
