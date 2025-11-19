@@ -270,6 +270,122 @@ ac  # 或 .\commit.ps1
 
 ---
 
+### 會話 7: 第二輪澄清 - 實作細節明確化
+
+**Prompt**: 
+```
+@speckit.clarify.agent.md [第二次執行，針對實作細節]
+使用者選擇: B（進行 3 個實作細節的額外澄清）
+```
+
+**第二輪澄清決策（3 個）**:
+1. **IndexedDB 配額管理策略** → 選項 B - 警告並提供清理工具
+   - 達到 80% 顯示警告
+   - 達到 95% 阻擋新操作
+   - 提供清理介面讓使用者選擇刪除
+
+2. **Token 保護機制** → 選項 C - 輕量後端代理
+   - 建立 Serverless API 代理層
+   - Token 存於後端，不暴露於前端
+   - 前端呼叫代理端點
+
+3. **時間戳記顯示標準** → 選項 A - 轉換為本地時間
+   - 統一顯示台灣時區（GMT+8）
+   - 格式：YYYY-MM-DD HH:mm
+   - Excel 匯出保持相同格式
+
+**執行內容**:
+- ✅ 完成 3 個實作細節澄清
+- ✅ **重要架構調整**：從「純前端」改為「前端為主 + 輕量後端代理」混合架構
+- ✅ 新增 3 個功能需求（FR-020, FR-021, FR-022）
+- ✅ 新增 2 個成功標準（SC-009, SC-010）
+- ✅ 新增 Storage Quota Status 實體
+- ✅ 更新 Assumptions（從 7 項增為 9 項）
+- ✅ 更新 Constraints（從 8 項增為 10 項）
+- ✅ 新增 2 個 Edge Cases（配額管理、後端服務異常）
+
+**變更檔案**:
+- `specs/001-social-comment-scraper/spec.md` (重大更新)
+
+**Commit**: 3d2c0a8
+
+**架構影響**:
+```
+修改前: 純前端 SPA → Instagram/Facebook API
+修改後: 前端 SPA → 後端 API 代理 → Instagram/Facebook API
+                  ↓
+            IndexedDB 儲存
+```
+
+**後端代理職責**:
+- 安全保存 App Access Token
+- 代理 API 呼叫
+- 速率限制和配額監控
+- 提供 RESTful 端點
+
+**技術選項**: Vercel Functions / AWS Lambda / Cloudflare Workers
+
+---
+
+### 會話 8: 推送到 GitHub 與編碼修復
+
+**Prompt 1**: 
+```
+請幫我 push 到我的 Github 行嗎
+```
+
+**執行內容**:
+- ✅ 推送 master 分支（8 個 commits）
+- ✅ 推送功能分支 `001-social-comment-scraper`
+- ✅ 成功同步到 GitHub 倉庫
+
+**Prompt 2**: 
+```
+會出現一些亂碼：這要怎麼解決
+有沒有可能是需要 git config --global core.quotepath false
+```
+
+**執行內容**:
+- ✅ 識別問題：PowerShell 和 Git 編碼不匹配
+- ✅ 執行關鍵設定：`git config --global core.quotepath false`
+- ✅ 設定 Git i18n 編碼（commitencoding, logoutputencoding）
+- ✅ 設定 PowerShell 當前會話編碼（UTF-8）
+- ✅ 更新 PowerShell Profile 永久修復
+- ✅ 建立一鍵修復腳本（fix-encoding.ps1）
+- ✅ 建立完整修復指南（修復中文亂碼問題.md）
+- ✅ 推送到 GitHub
+
+**變更檔案**:
+- `fix-encoding.ps1` (新建)
+- `修復中文亂碼問題.md` (新建)
+- PowerShell Profile（已更新，位於 `$PROFILE`）
+
+**Commit**: cfed898
+
+**推送狀態**:
+- Master 分支: ✅ d518386..cfed898
+- 功能分支: ✅ 001-social-comment-scraper
+
+**Git 編碼設定（已執行）**:
+```bash
+core.quotepath = false           # 不轉義中文
+i18n.commitencoding = utf-8      # Commit 使用 UTF-8
+i18n.logoutputencoding = utf-8   # Log 輸出 UTF-8
+```
+
+**PowerShell 編碼設定（已添加到 Profile）**:
+```powershell
+[Console]::OutputEncoding = UTF8
+$OutputEncoding = UTF8
+chcp 65001
+```
+
+**修復生效條件**: ⚠️ 需要重新啟動 PowerShell 終端
+
+**GitHub 倉庫**: https://github.com/jokersosmart/Cursor
+
+---
+
 ## 使用說明
 
 ### 更新此檔案
