@@ -386,6 +386,100 @@ chcp 65001
 
 ---
 
+### 會話 9: 技術規劃（Phase 0 & 1）
+
+**Prompt**: 
+```
+@speckit.plan.agent.md [使用者選擇 A - 立即執行技術規劃]
+```
+
+**執行內容**:
+- ✅ 生成完整實作計劃（plan.md）
+- ✅ 完成技術研究（research.md，13 個研究領域）
+- ✅ 設計資料模型（data-model.md，IndexedDB Schema）
+- ✅ 定義 API 契約（2 個 OpenAPI 規格）
+- ✅ 建立快速開始指南（quickstart.md）
+- ✅ 憲章合規檢查（全部通過）
+
+**技術堆疊決策**:
+
+**前端**:
+- React 18 + TypeScript 5.2+
+- Vite（建構工具）
+- AG Grid Community（表格編輯）
+- Dexie.js（IndexedDB wrapper）
+- SheetJS（Excel 匯出）
+- date-fns（時間處理）
+- Tailwind CSS（樣式）
+- react-hot-toast（通知）
+
+**後端**:
+- Vercel Serverless Functions
+- Node.js 18+
+- axios（API 呼叫）
+- node-cache（速率限制）
+
+**測試**:
+- Vitest（單元測試）
+- Playwright（E2E 測試）
+- MSW（API Mock）
+- Lighthouse CI（效能）
+
+**關鍵技術決策（13 個研究領域）**:
+1. Graph API 端點和權限需求
+2. Vercel Serverless Functions（vs AWS Lambda vs Cloudflare Workers）
+3. Dexie.js IndexedDB wrapper（vs 原生 vs LocalForage）
+4. AG Grid Community（vs Handsontable vs react-data-grid）
+5. SheetJS（vs ExcelJS）
+6. React Context + Hooks（vs Redux vs Zustand）
+7. Token Bucket 速率限制（vs Leaky Bucket）
+8. date-fns 本地時間顯示（GMT+8）
+9. 多層次錯誤處理 + Toast 通知
+10. 虛擬滾動 + 懶載入 + Code Splitting
+11. Token 保護（Serverless 環境變數）
+12. React ARIA 無障礙實作
+13. IndexedDB 配額管理（80%/95% 警告）
+
+**資料模型設計**:
+- 6 個核心實體（Post, Comment, ScrapingState, CustomField, OperationHistory, StorageQuotaStatus）
+- 完整的索引策略（複合索引優化查詢）
+- 狀態轉換圖（5 個狀態）
+- 串聯刪除邏輯
+- 效能優化（批次操作、查詢快取）
+
+**API 契約**:
+- backend-api.yaml（3 個端點：Instagram, Facebook, Health）
+- graph-api-integration.yaml（URL 解析、錯誤映射、速率限制處理）
+- 完整的錯誤碼對照表（繁體中文訊息）
+
+**專案結構**:
+- 前端（frontend/）：React SPA
+- 後端（api/）：Serverless Functions
+- 測試（tests/）：單元 + 整合 + 契約測試
+
+**估算時程**:
+- MVP（P1 Story）：6.5 天
+- 完整功能（P1-P4）：16.5 天
+- 建議人力：1 位全端（3-4 週）或 2 位（2 週）
+
+**變更檔案**:
+- `specs/001-social-comment-scraper/plan.md` (新建，~300 行)
+- `specs/001-social-comment-scraper/research.md` (新建，~550 行)
+- `specs/001-social-comment-scraper/data-model.md` (新建，~450 行)
+- `specs/001-social-comment-scraper/contracts/backend-api.yaml` (新建，~300 行)
+- `specs/001-social-comment-scraper/contracts/graph-api-integration.yaml` (新建，~400 行)
+- `specs/001-social-comment-scraper/quickstart.md` (新建，~450 行)
+
+**總文件規模**: ~2,450 行完整技術規劃
+
+**Commit**: 2ff705d
+
+**憲章合規檢查結果**: ✅ 全部通過（10/10 檢查項目）
+
+**下一步**: 執行 `/speckit.tasks` 生成任務分解清單
+
+---
+
 ## 使用說明
 
 ### 更新此檔案
