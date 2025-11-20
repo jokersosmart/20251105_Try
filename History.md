@@ -1041,6 +1041,98 @@ chcp 65001
 
 ---
 
+### 會話 17: 完成003專案完整規劃（連續執行）
+
+**Prompt**: 
+```
+繼續執行clarify（5次，自動選擇推薦）+ checklist（自動選擇）+ 完整規劃
+使用者選擇：A（全速完成，不停止）
+```
+
+**執行內容**:
+- ✅ 澄清5個關鍵決策（自動選擇最佳方案）
+- ✅ 生成50項品質檢查清單（全面性檢查）
+- ✅ 完成技術規劃（plan.md）
+- ✅ 生成任務分解（tasks.md，36任務MVP）
+- ✅ 建立快速開始指南（quickstart.md）
+
+**澄清決策（5個，全部採用推薦）**:
+1. MVP平台範圍 → Facebook + Instagram（已有基礎，4週可完成）
+2. 認證方式優先 → API Token優先（合法穩定），爬蟲備案，模擬登入謹慎
+3. Chrome擴充時程 → V2階段（先驗證網頁版核心價值）
+4. 資料儲存位置 → IndexedDB本地（隱私優先，離線可用）
+5. MVP開發重點 → FB/IG API模式 + 基本顯示匯出（4週完成）
+
+**品質檢查清單（50項）**:
+- 需求完整性（8項）
+- 平台適配（6項）⭐ 特別關注
+- 認證與安全（6項）⭐ 特別關注
+- 需求清晰度（5項）
+- 需求一致性（4項）
+- 技術可行性與風險（5項）
+- 使用者體驗（4項）
+- 效能與擴展性（3項）
+- 資料品質（4項）
+- 法律合規（5項）
+
+**技術規劃（plan.md）**:
+- 模組化平台適配器架構
+- 每個平台獨立模組（易擴展）
+- 統一介面：identify() → authenticate() → scrape()
+- MVP專注FB+IG（基於001專案經驗）
+- 認證多模式：API Token + 帳密模擬 + 無需認證
+
+**任務分解（36任務，MVP範圍）**:
+- Phase 1: Setup（5任務）
+- Phase 2: 核心架構-平台適配器（4任務）
+- Phase 3: 認證系統（3任務）
+- Phase 4: Facebook適配器（4任務）
+- Phase 5: Instagram適配器（4任務）
+- Phase 6: 擷取引擎（3任務）
+- Phase 7: UI實作（5任務）
+- Phase 8: 整合測試（4任務）
+- Phase 9: Polish（4任務）
+
+**開發時程**:
+- MVP（FB+IG）: 4週
+- V2（Medium+方格子+痞客邦）: +4週
+- V3（Chrome擴充）: +2週
+- **總計**: 10週（2.5個月完整產品）
+
+**專案架構**:
+```
+平台適配器模式（核心創新）:
+├── PlatformAdapter（抽象基類）
+├── FacebookAdapter
+├── InstagramAdapter
+└── [未來] MediumAdapter, VocusAdapter...
+
+每個適配器實作：
+• identify(url): 識別是否為該平台
+• authenticate(credentials): 處理認證
+• scrape(url, options): 執行擷取
+```
+
+**變更檔案**:
+- specs/003-universal-comment-scraper/plan.md（新建）
+- specs/003-universal-comment-scraper/tasks.md（新建，36任務）
+- specs/003-universal-comment-scraper/quickstart.md（新建）
+- specs/003-universal-comment-scraper/spec.md（更新，加入澄清）
+- specs/003-universal-comment-scraper/checklists/comprehensive.md（新建，50項）
+
+**Commit**: 3980d2a
+
+**關鍵亮點**:
+- 採用設計模式（Adapter Pattern）
+- 高度模組化，易於擴展
+- MVP務實（4週FB+IG）
+- V2清晰（再4週加入其他平台）
+- 最終Chrome擴充（V3）
+
+**專案定位**: 產品級多平台解決方案
+
+---
+
 ## 使用說明
 
 ### 更新此檔案
