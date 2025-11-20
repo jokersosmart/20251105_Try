@@ -1133,6 +1133,88 @@ chcp 65001
 
 ---
 
+### 會話 18: 完成003專案技術規劃（Phase 0 & 1）
+
+**Prompt**: 
+```
+繼續執行 @speckit.plan.prompt.md
+```
+
+**執行內容**:
+- ✅ 完成Phase 0技術研究（research.md）
+- ✅ 完成Phase 1詳細設計（data-model.md）
+- ✅ 定義平台適配器介面契約（contracts/）
+
+**Phase 0: 技術研究（6個研究領域）**:
+1. **平台適配器設計模式** → Adapter + Strategy Pattern
+2. **Facebook vs Instagram API差異** → 統一資料結構設計
+3. **認證管理與安全** → AES-256-GCM加密儲存
+4. **後端代理層設計** → Vercel Serverless Functions
+5. **平台擴展策略（V2）** → Medium、方格子、痞客邦研究
+6. **Chrome擴充架構（V3）** → Manifest V3設計
+
+**Phase 1: 資料模型（5個核心實體）**:
+1. PlatformConfig - 平台配置和識別規則
+2. UnifiedComment - 統一留言資料結構（跨平台一致）
+3. ScrapeTask - 擷取任務狀態管理
+4. EncryptedCredential - 加密憑證儲存（安全）
+5. ScrapeHistory - 擷取歷史記錄
+
+**平台適配器介面**:
+```typescript
+interface PlatformAdapter {
+  identify(url: string): boolean;           // 識別網址
+  authenticate(credentials): Promise<AuthResult>; // 認證
+  scrape(url, options): AsyncIterator<Comment>;   // 擷取（流式）
+}
+```
+
+**核心創新**:
+- **統一介面**：所有平台實作相同3個方法
+- **AsyncIterator**：流式處理，記憶體友善，支援大量留言
+- **加密儲存**：Token和帳密AES-256加密
+- **模組化**：新增平台只需實作3個方法
+- **可測試性**：每個平台獨立測試
+
+**技術決策**:
+1. Adapter Pattern（統一介面，易擴展）
+2. AES-256-GCM加密（Token安全）
+3. Vercel Functions（後端代理）
+4. AsyncIterator（流式處理）
+5. 分階段開發（MVP 4週 → V2 4週 → V3 2週）
+
+**變更檔案**:
+- specs/003-universal-comment-scraper/research.md（新建）
+- specs/003-universal-comment-scraper/data-model.md（新建）
+- specs/003-universal-comment-scraper/contracts/platform-adapter-interface.md（新建）
+
+**Commit**: f2e7b95
+
+**003專案完整文件**:
+```
+specs/003-universal-comment-scraper/
+├── spec.md                    ✅ 功能規格（283行）
+├── plan.md                    ✅ 實作計劃
+├── research.md                ✅ 技術研究
+├── data-model.md              ✅ 資料模型
+├── tasks.md                   ✅ 任務清單（36個MVP任務）
+├── quickstart.md              ✅ 快速開始
+├── contracts/                 ✅ 介面契約
+│   └── platform-adapter-interface.md
+└── checklists/                ✅ 品質檢查
+    └── comprehensive.md（50項）
+```
+
+**專案就緒度**: ✅ 100%可以開始開發
+
+**預估開發時程**:
+- MVP（FB+IG）: 4週
+- V2（更多平台）: +4週
+- V3（Chrome擴充）: +2週
+- 總計：10週（2.5個月）完整產品
+
+---
+
 ## 使用說明
 
 ### 更新此檔案
