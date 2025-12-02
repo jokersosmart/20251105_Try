@@ -1,381 +1,289 @@
-# 任務清單：通用留言擷取工具
+# Tasks: 通用留言擷取工具
 
-**Input**: specs/003-universal-comment-scraper/  
-**MVP範圍**: Facebook + Instagram API擷取  
-**完整願景**: 8+平台通用擷取工具 + Chrome擴充套件
+**Input**: `specs/003-universal-comment-scraper/`  
+**Prerequisites**: plan.md ✅, spec.md ✅, data-model.md ✅, research.md ✅, contracts/ ✅  
+**Generated**: 2025-12-02  
+**Total Tasks**: 68 任務  
 
-**組織方式**: 按功能模組和使用者故事分組
+## Format: `[ID] [P?] [Story] Description`
+
+- **[P]**: 可平行執行（不同檔案、無依賴）
+- **[Story]**: 所屬用戶故事（US1, US2, US3, US4, US5）
+- 路徑基於 `universal-scraper/frontend/`
 
 ---
 
 ## Phase 1: Setup（專案初始化）
 
-**目的**: 建立專案基礎結構和開發環境
+**Purpose**: 建立專案基礎架構
 
-- [ ] T001 [P] 建立專案根目錄結構（universal-scraper/frontend/, api/, docs/）
-- [ ] T002 [P] 初始化前端React + TypeScript + Vite專案在frontend/
-- [ ] T003 [P] 安裝核心依賴（React, Dexie, AG Grid, crypto-js, axios）
-- [ ] T004 [P] 設定ESLint和Prettier配置
-- [ ] T005 [P] 設定Tailwind CSS
-- [ ] T006 [P] 建立TypeScript類型定義結構frontend/src/types/
-- [ ] T007 [P] 設定環境變數範本.env.example
-- [ ] T008 [P] 建立vercel.json部署設定
-- [ ] T009 [P] 設定Git hooks（Husky）
-- [ ] T010 [P] 建立README.md（繁體中文，專案說明）
+- [ ] T001 建立專案資料夾結構 `universal-scraper/frontend/` 依據 plan.md
+- [ ] T002 初始化 Vite + React + TypeScript 專案 `pnpm create vite frontend --template react-ts`
+- [ ] T003 [P] 安裝核心依賴 `dexie ag-grid-react xlsx axios crypto-js`
+- [ ] T004 [P] 安裝開發依賴 `tailwindcss vitest @testing-library/react`
+- [ ] T005 [P] 配置 Tailwind CSS 在 `frontend/tailwind.config.js`
+- [ ] T006 [P] 配置 TypeScript 嚴格模式在 `frontend/tsconfig.json`
+- [ ] T007 [P] 建立 ESLint + Prettier 配置檔案
+- [ ] T008 建立環境變數配置 `frontend/.env.example` 和 `.env.local`
 
----
-
-## Phase 2: Foundation - 平台適配器核心架構
-
-**目的**: 建立模組化的平台適配器基礎設施
-
-### 基礎架構
-
-- [ ] T011 設計並實作PlatformAdapter抽象基類frontend/src/platforms/base/PlatformAdapter.ts
-- [ ] T012 [P] 定義平台適配器類型frontend/src/platforms/base/types.ts
-- [ ] T013 [P] 實作平台註冊表（Registry Pattern）frontend/src/platforms/registry.ts
-- [ ] T014 [P] 實作平台偵測器（URL → 平台識別）frontend/src/services/platform-detector.ts
-- [ ] T015 [P] 撰寫平台架構單元測試frontend/tests/unit/platform-base.test.ts
-
-### IndexedDB資料層
-
-- [ ] T016 設定Dexie.js資料庫Schema frontend/src/services/storage/db.ts
-- [ ] T017 [P] 定義所有TypeScript介面frontend/src/types/（comment, task, credential, platform）
-- [ ] T018 [P] 實作Comment資料存取層frontend/src/services/storage/comments-store.ts
-- [ ] T019 [P] 實作Task資料存取層frontend/src/services/storage/tasks-store.ts
-- [ ] T020 [P] 實作配額管理器frontend/src/services/storage/quota-manager.ts
-- [ ] T021 [P] 撰寫儲存層單元測試frontend/tests/unit/storage.test.ts
-
-### 核心服務
-
-- [ ] T022 [P] 實作URL解析工具frontend/src/services/utils/url-parser.ts
-- [ ] T023 [P] 實作時間格式化工具frontend/src/services/utils/time-formatter.ts
-- [ ] T024 [P] 實作資料驗證器frontend/src/services/utils/validator.ts
-- [ ] T025 [P] 實作錯誤處理工具frontend/src/services/utils/error-handler.ts
-- [ ] T026 [P] 撰寫工具模組測試frontend/tests/unit/utils.test.ts
-
-### 基礎UI元件
-
-- [ ] T027 [P] 實作Button元件frontend/src/components/common/Button.tsx
-- [ ] T028 [P] 實作Input元件frontend/src/components/common/Input.tsx
-- [ ] T029 [P] 實作Modal元件frontend/src/components/common/Modal.tsx
-- [ ] T030 [P] 實作Toast通知系統frontend/src/components/common/Toast.tsx
-- [ ] T031 [P] 實作ProgressBar元件frontend/src/components/common/ProgressBar.tsx
-- [ ] T032 [P] 撰寫基礎元件測試frontend/tests/unit/components/common.test.ts
-
-**Checkpoint**: 基礎架構完成，可以開始實作具體平台適配器
+**Checkpoint**: 專案結構就緒，可執行 `pnpm dev`
 
 ---
 
-## Phase 3: 認證系統（多模式支援）
+## Phase 2: Foundational（基礎建設）
 
-**目的**: 實作Token和憑證管理，支援API和帳密模式
+**Purpose**: 核心基礎設施，所有用戶故事的前置條件
 
-### 認證核心
+**⚠️ 關鍵**: 此階段完成前，不能開始任何用戶故事開發
 
-- [ ] T033 [P] 實作Token管理器（加密儲存AES-256）frontend/src/services/auth/token-manager.ts
-- [ ] T034 [P] 實作憑證加密模組（crypto-js）frontend/src/services/auth/crypto-utils.ts
-- [ ] T035 [P] 實作憑證儲存層（IndexedDB加密）frontend/src/services/auth/credential-store.ts
-- [ ] T036 實作認證驗證器（多平台）frontend/src/services/auth/auth-validator.ts
-- [ ] T037 [P] 實作認證狀態管理Hook frontend/src/hooks/useAuth.ts
-- [ ] T038 [P] 撰寫認證系統測試frontend/tests/unit/auth.test.ts
+### 資料庫架構
 
-### 後端Token保護
+- [ ] T009 實作 IndexedDB 配置在 `frontend/src/services/storage/db.ts`（使用 Dexie.js）
+- [ ] T010 [P] 定義 PlatformConfig 類型在 `frontend/src/platforms/base/types.ts`
+- [ ] T011 [P] 定義 UnifiedComment 類型在 `frontend/src/platforms/base/types.ts`
+- [ ] T012 [P] 定義 ScrapeTask 類型在 `frontend/src/platforms/base/types.ts`
+- [ ] T013 [P] 定義 EncryptedCredential 類型在 `frontend/src/platforms/base/types.ts`
 
-- [ ] T039 [P] 實作Token管理模組（後端）api/_lib/token-manager.ts
-- [ ] T040 [P] 實作速率限制（Token Bucket）api/_lib/rate-limiter.ts
-- [ ] T041 [P] 實作錯誤映射（API錯誤→繁中）api/_lib/error-mapper.ts
-- [ ] T042 [P] 撰寫後端模組測試api/_tests/lib.test.ts
+### 平台適配器基礎
 
-**Checkpoint**: 認證系統完成，支援Token加密儲存和驗證
+- [ ] T014 實作 PlatformAdapter 抽象基類在 `frontend/src/platforms/base/PlatformAdapter.ts`
+- [ ] T015 實作平台註冊表在 `frontend/src/platforms/registry.ts`
+- [ ] T016 [P] 實作 URL 識別工具函數在 `frontend/src/platforms/base/url-utils.ts`
 
----
+### 認證框架
 
-## Phase 4: Facebook適配器（完整實作）
+- [ ] T017 實作 Token 加密/解密工具在 `frontend/src/services/auth/crypto-utils.ts`
+- [ ] T018 [P] 實作憑證儲存服務在 `frontend/src/services/auth/credential-store.ts`
 
-**目的**: 實作Facebook平台的完整擷取功能
+### UI 基礎
 
-### 測試（TDD）
+- [ ] T019 [P] 建立共用 UI 組件資料夾結構 `frontend/src/components/`
+- [ ] T020 [P] 實作基礎 Layout 組件在 `frontend/src/components/Layout.tsx`
+- [ ] T021 [P] 實作錯誤邊界組件在 `frontend/src/components/ErrorBoundary.tsx`
+- [ ] T022 [P] 配置全域 CSS 變數和主題在 `frontend/src/index.css`
 
-- [ ] T043 [P] 撰寫Facebook適配器契約測試frontend/tests/unit/facebook-adapter.test.ts
-- [ ] T044 [P] 撰寫Facebook API客戶端測試（MSW）frontend/tests/mocks/facebook-api.ts
-
-### 核心實作
-
-- [ ] T045 實作FacebookAdapter類frontend/src/platforms/facebook/FacebookAdapter.ts
-- [ ] T046 [P] 實作Facebook URL解析器frontend/src/platforms/facebook/url-parser.ts
-- [ ] T047 [P] 實作Facebook資料正規化frontend/src/platforms/facebook/normalizer.ts
-- [ ] T048 實作Facebook API客戶端（前端）frontend/src/platforms/facebook/api-client.ts
-- [ ] T049 實作Facebook後端API代理api/facebook.ts（依賴T039-T041）
-- [ ] T050 [P] 實作Facebook貼文資訊取得frontend/src/platforms/facebook/post-fetcher.ts
-- [ ] T051 [P] 實作Facebook分頁處理frontend/src/platforms/facebook/pagination-handler.ts
-
-### 整合測試
-
-- [ ] T052 Facebook端到端測試（真實API或Mock）frontend/tests/integration/facebook.spec.ts
-- [ ] T053 Facebook錯誤處理測試
-
-**Checkpoint**: Facebook完整可用，可擷取單一貼文和粉專批次留言
+**Checkpoint**: 基礎設施就緒，可開始用戶故事開發
 
 ---
 
-## Phase 5: Instagram適配器（完整實作）
+## Phase 3: User Story 1 - 智能平台識別與擷取設定 (Priority: P1) 🎯 MVP
 
-**目的**: 實作Instagram平台的完整擷取功能
+**Goal**: 使用者輸入網址，系統自動識別平台類型，引導完成認證設定
 
-### 測試（TDD）
+**Independent Test**: 輸入 Facebook/Instagram/Medium 網址，系統正確識別並顯示對應認證需求
 
-- [ ] T054 [P] 撰寫Instagram適配器契約測試frontend/tests/unit/instagram-adapter.test.ts
-- [ ] T055 [P] 撰寫Instagram API客戶端測試（MSW）frontend/tests/mocks/instagram-api.ts
+### 實作 User Story 1
 
-### 核心實作
+- [ ] T023 [US1] 實作 Facebook URL 解析器在 `frontend/src/platforms/facebook/url-parser.ts`
+- [ ] T024 [P] [US1] 實作 Instagram URL 解析器在 `frontend/src/platforms/instagram/url-parser.ts`
+- [ ] T025 [US1] 實作 FacebookAdapter 類別在 `frontend/src/platforms/facebook/FacebookAdapter.ts`
+- [ ] T026 [P] [US1] 實作 InstagramAdapter 類別在 `frontend/src/platforms/instagram/InstagramAdapter.ts`
+- [ ] T027 [US1] 實作平台識別邏輯在 `frontend/src/services/platform-detector.ts`
+- [ ] T028 [US1] 實作 Token 驗證服務在 `frontend/src/services/auth/token-validator.ts`
+- [ ] T029 [US1] 實作首頁 URL 輸入組件在 `frontend/src/pages/HomePage.tsx`
+- [ ] T030 [US1] 實作平台識別結果顯示組件在 `frontend/src/components/PlatformDetectionResult.tsx`
+- [ ] T031 [US1] 實作認證選擇彈窗組件在 `frontend/src/components/AuthModal.tsx`
+- [ ] T032 [US1] 實作 Token 輸入表單組件在 `frontend/src/components/TokenInputForm.tsx`
+- [ ] T033 [US1] 實作帳密輸入表單組件在 `frontend/src/components/LoginForm.tsx`
+- [ ] T034 [US1] 整合 HomePage 與所有認證組件
+- [ ] T035 [US1] 加入繁體中文錯誤訊息和提示文字
 
-- [ ] T056 實作InstagramAdapter類frontend/src/platforms/instagram/InstagramAdapter.ts
-- [ ] T057 [P] 實作Instagram URL解析器frontend/src/platforms/instagram/url-parser.ts
-- [ ] T058 [P] 實作Instagram資料正規化frontend/src/platforms/instagram/normalizer.ts
-- [ ] T059 實作Instagram API客戶端（前端）frontend/src/platforms/instagram/api-client.ts
-- [ ] T060 實作Instagram後端API代理api/instagram.ts（依賴T039-T041）
-- [ ] T061 [P] 實作Instagram帳號資訊取得frontend/src/platforms/instagram/account-fetcher.ts
-- [ ] T062 [P] 實作Instagram分頁處理frontend/src/platforms/instagram/pagination-handler.ts
-
-### 整合測試
-
-- [ ] T063 Instagram端到端測試frontend/tests/integration/instagram.spec.ts
-- [ ] T064 Instagram錯誤處理測試
-
-**Checkpoint**: Instagram完整可用，可擷取貼文和帳號批次留言
+**Checkpoint**: US1 完成 - 使用者可輸入網址、識別平台、設定認證
 
 ---
 
-## Phase 6: 擷取引擎（統一協調層）
+## Phase 4: User Story 2 - 多平台留言擷取執行 (Priority: P2)
 
-**目的**: 實作跨平台的擷取引擎和進度管理
+**Goal**: 認證完成後，系統使用對應方式擷取留言，顯示即時進度
 
-- [ ] T065 實作ScrapeEngine核心類frontend/src/services/scraper/scrape-engine.ts
-- [ ] T066 [P] 實作進度追蹤器（事件發射）frontend/src/services/scraper/progress-tracker.ts
-- [ ] T067 [P] 實作結果聚合器（跨平台資料整合）frontend/src/services/scraper/result-aggregator.ts
-- [ ] T068 [P] 實作批次處理器（多URL）frontend/src/services/scraper/batch-processor.ts
-- [ ] T069 [P] 實作錯誤重試邏輯frontend/src/services/scraper/retry-handler.ts
-- [ ] T070 [P] 建立useScraper Hook frontend/src/hooks/useScraper.ts
-- [ ] T071 [P] 撰寫擷取引擎測試frontend/tests/unit/scraper.test.ts
+**Independent Test**: 提供 Facebook Token 和貼文網址，成功擷取所有留言
 
-**Checkpoint**: 擷取引擎完成，支援多平台統一介面
+### 實作 User Story 2
 
----
+- [ ] T036 [US2] 實作 Facebook API 客戶端在 `frontend/src/platforms/facebook/api-client.ts`
+- [ ] T037 [P] [US2] 實作 Instagram API 客戶端在 `frontend/src/platforms/instagram/api-client.ts`
+- [ ] T038 [US2] 實作分頁處理邏輯在 `frontend/src/services/scraper/pagination-handler.ts`
+- [ ] T039 [US2] 實作擷取引擎在 `frontend/src/services/scraper/scrape-engine.ts`
+- [ ] T040 [US2] 實作進度追蹤器在 `frontend/src/services/scraper/progress-tracker.ts`
+- [ ] T041 [US2] 實作結果聚合器在 `frontend/src/services/scraper/result-aggregator.ts`
+- [ ] T042 [US2] 實作留言正規化工具在 `frontend/src/platforms/base/comment-normalizer.ts`
+- [ ] T043 [US2] 實作擷取進度顯示組件在 `frontend/src/components/ScrapeProgress.tsx`
+- [ ] T044 [US2] 實作擷取頁面在 `frontend/src/pages/ScrapePage.tsx`
+- [ ] T045 [US2] 加入錯誤處理（速率限制、網路錯誤、權限不足）
+- [ ] T046 [US2] 實作批次擷取模式（多個網址）支援
 
-## Phase 7: UI實作（使用者介面）
-
-**目的**: 建立完整的使用者介面
-
-### URL輸入與平台識別
-
-- [ ] T072 [P] 實作URLInput元件（網址輸入）frontend/src/components/scraper/URLInput.tsx
-- [ ] T073 [P] 實作PlatformBadge元件（平台標示）frontend/src/components/scraper/PlatformBadge.tsx
-- [ ] T074 實作PlatformSelector元件（手動選擇平台）frontend/src/components/scraper/PlatformSelector.tsx
-
-### 認證介面
-
-- [ ] T075 [P] 實作TokenInput元件（Token輸入和驗證）frontend/src/components/auth/TokenInput.tsx
-- [ ] T076 [P] 實作AuthModal元件（認證選擇對話框）frontend/src/components/auth/AuthModal.tsx
-- [ ] T077 [P] 實作TokenManager UI元件（Token管理介面）frontend/src/components/auth/TokenManager.tsx
-
-### 擷取介面
-
-- [ ] T078 [P] 實作ScrapeProgress元件（進度條和狀態）frontend/src/components/scraper/ScrapeProgress.tsx
-- [ ] T079 [P] 實作BatchModeToggle元件（批次模式切換）frontend/src/components/scraper/BatchModeToggle.tsx
-- [ ] T080 實作ScrapeControls元件（開始、暫停、取消）frontend/src/components/scraper/ScrapeControls.tsx
-
-### 結果顯示
-
-- [ ] T081 實作CommentsTable元件（使用AG Grid）frontend/src/components/results/CommentsTable.tsx
-- [ ] T082 [P] 實作CommentsFilter元件（搜尋篩選）frontend/src/components/results/CommentsFilter.tsx
-- [ ] T083 [P] 實作CommentStats元件（統計卡片）frontend/src/components/results/CommentStats.tsx
-- [ ] T084 [P] 實作ExportButton元件（Excel匯出）frontend/src/components/results/ExportButton.tsx
-- [ ] T085 [P] 實作CopyButton元件（複製功能）frontend/src/components/results/CopyButton.tsx
-
-### 頁面整合
-
-- [ ] T086 實作Home頁面（整合所有元件）frontend/src/pages/Home.tsx
-- [ ] T087 [P] 實作History頁面（擷取歷史）frontend/src/pages/History.tsx
-- [ ] T088 [P] 實作Settings頁面（設定和Token管理）frontend/src/pages/Settings.tsx
-
-**Checkpoint**: 完整UI可用，所有功能可視化操作
+**Checkpoint**: US2 完成 - 使用者可執行擷取，看到即時進度
 
 ---
 
-## Phase 8: 資料處理與匯出
+## Phase 5: User Story 3 - 留言資料顯示與即時查看 (Priority: P3)
 
-**目的**: 實作資料轉換和匯出功能
+**Goal**: 擷取完成後，以表格顯示留言，支援搜尋、篩選、排序
 
-- [ ] T089 [P] 實作Excel匯出邏輯（SheetJS）frontend/src/services/export/excel-exporter.ts
-- [ ] T090 [P] 實作資料轉換器（UnifiedComment → Excel）frontend/src/services/export/data-transformer.ts
-- [ ] T091 [P] 實作檔案命名邏輯frontend/src/services/export/file-namer.ts
-- [ ] T092 [P] 實作複製到剪貼簿功能frontend/src/services/export/clipboard-handler.ts
-- [ ] T093 [P] 測試Excel匯出（繁體中文、emoji）
+**Independent Test**: 擷取結果以表格顯示，可搜尋關鍵字、按時間排序
 
-**Checkpoint**: 資料可完整匯出，格式正確
+### 實作 User Story 3
 
----
+- [ ] T047 [US3] 配置 AG Grid 在 `frontend/src/components/CommentGrid.tsx`
+- [ ] T048 [US3] 實作留言欄位定義在 `frontend/src/components/grid/columnDefs.ts`
+- [ ] T049 [US3] 實作搜尋篩選功能在 `frontend/src/components/SearchFilter.tsx`
+- [ ] T050 [US3] 實作排序功能（時間、按讚數）
+- [ ] T051 [US3] 實作留言者篩選功能（點擊留言者姓名）
+- [ ] T052 [US3] 實作虛擬滾動（大量留言效能優化）
+- [ ] T053 [US3] 實作結果頁面在 `frontend/src/pages/ResultsPage.tsx`
+- [ ] T054 [US3] 加入統計摘要顯示（總留言數、唯一留言者數等）
 
-## Phase 9: 整合與端到端測試
-
-**目的**: 整合所有功能並進行完整測試
-
-### 整合
-
-- [ ] T094 整合Facebook適配器到主流程
-- [ ] T095 整合Instagram適配器到主流程
-- [ ] T096 整合認證系統到UI
-- [ ] T097 整合擷取引擎到UI
-
-### 端到端測試
-
-- [ ] T098 [P] E2E測試：Facebook單一貼文擷取frontend/tests/e2e/facebook-post.spec.ts
-- [ ] T099 [P] E2E測試：Facebook粉專批次擷取frontend/tests/e2e/facebook-page.spec.ts
-- [ ] T100 [P] E2E測試：Instagram單一貼文擷取frontend/tests/e2e/instagram-post.spec.ts
-- [ ] T101 [P] E2E測試：Instagram帳號批次擷取frontend/tests/e2e/instagram-account.spec.ts
-- [ ] T102 [P] E2E測試：跨平台批次擷取（FB+IG）frontend/tests/e2e/multi-platform.spec.ts
-
-### 效能測試
-
-- [ ] T103 [P] 效能測試：1000則留言處理
-- [ ] T104 [P] 效能測試：記憶體使用監控
-- [ ] T105 [P] 效能測試：API速率限制處理
-
-**Checkpoint**: 所有功能經過完整測試，品質保證
+**Checkpoint**: US3 完成 - 使用者可瀏覽、搜尋、篩選留言資料
 
 ---
 
-## Phase 10: Polish & 優化
+## Phase 6: User Story 4 - 資料匯出與格式化 (Priority: P4)
 
-**目的**: 品質提升和使用者體驗優化
+**Goal**: 使用者可匯出 Excel，繁體中文無亂碼
+
+**Independent Test**: 點擊匯出，下載 Excel 檔案，在 Excel 開啟顯示正確
+
+### 實作 User Story 4
+
+- [ ] T055 [US4] 實作 Excel 匯出服務在 `frontend/src/services/export/excel-exporter.ts`（使用 SheetJS）
+- [ ] T056 [US4] 實作資料格式化（時間格式、欄位名稱統一）
+- [ ] T057 [US4] 實作匯出選項彈窗在 `frontend/src/components/ExportModal.tsx`
+- [ ] T058 [US4] 整合匯出按鈕到結果頁面
+- [ ] T059 [US4] 支援匯出篩選後資料選項
+
+**Checkpoint**: US4 完成 - 使用者可匯出完整或篩選後的 Excel 檔案
+
+---
+
+## Phase 7: User Story 5 - Chrome擴充套件整合 (Priority: P5) 【V2階段】
+
+**Goal**: 安裝擴充套件後，瀏覽支援平台時可直接擷取
+
+**Independent Test**: 在 Facebook 頁面點擊擴充圖示，彈窗顯示擷取選項
+
+### 實作 User Story 5
+
+- [ ] T060 [US5] 建立 Chrome Extension 專案結構 `universal-scraper/extension/`
+- [ ] T061 [US5] 建立 manifest.json（Manifest V3）
+- [ ] T062 [US5] 實作 Background Service Worker 在 `extension/background.js`
+- [ ] T063 [US5] 實作 Content Script 在 `extension/content.js`
+- [ ] T064 [US5] 實作 Popup UI 在 `extension/popup.html` 和 `extension/popup.js`
+- [ ] T065 [US5] 整合平台識別邏輯到 Content Script
+- [ ] T066 [US5] 實作擴充圖示狀態切換（支援/不支援平台）
+
+**Checkpoint**: US5 完成 - Chrome 擴充套件可使用
+
+---
+
+## Phase 8: Polish & Cross-Cutting Concerns
+
+**Purpose**: 品質驗證和跨功能優化
 
 ### 憲章合規驗證
 
-- [ ] T106 [P] 驗證程式碼覆蓋率≥80%
-- [ ] T107 [P] ESLint零警告檢查
-- [ ] T108 [P] WCAG 2.1 AA無障礙驗證
-- [ ] T109 [P] Lighthouse CI效能檢查
-
-### 錯誤處理完善
-
-- [ ] T110 [P] 實作全局錯誤邊界frontend/src/components/ErrorBoundary.tsx
-- [ ] T111 [P] 完善所有平台錯誤訊息（繁中）
-- [ ] T112 測試所有錯誤場景（15+種）
-
-### UX優化
-
-- [ ] T113 [P] 實作鍵盤快捷鍵（Ctrl+Z, Ctrl+F, Ctrl+S）
-- [ ] T114 [P] 實作載入骨架屏
-- [ ] T115 [P] 實作首次使用引導（Onboarding）
-- [ ] T116 [P] 優化動畫和過渡效果
-
-### 文件與部署
-
-- [ ] T117 [P] 撰寫使用者手冊（繁中）docs/user-guide.md
-- [ ] T118 [P] 撰寫開發者文件docs/developer-guide.md
-- [ ] T119 [P] 建立平台擴展指南docs/adding-platforms.md
-- [ ] T120 [P] 更新README.md完整說明
-- [ ] T121 設定Vercel生產環境部署
-- [ ] T122 設定Sentry錯誤追蹤
-- [ ] T123 設定Google Analytics（可選）
-- [ ] T124 執行完整quickstart.md驗證
-
-**Checkpoint**: MVP完成，可部署上線
+- [ ] T067 [P] 驗證所有 UI 文字為繁體中文（zh-TW）
+- [ ] T068 [P] 驗證錯誤訊息提供具體指引
 
 ---
 
-## Phase 11: V2準備（未來擴展）
+## Dependencies & Execution Order
 
-**目的**: 為V2平台擴展做準備（不在MVP範圍）
-
-### Medium適配器（V2）
-
-- [ ] T125 [P] 研究Medium API/爬蟲方式
-- [ ] T126 [P] 實作MediumAdapter
-- [ ] T127 測試Medium擷取
-
-### 方格子適配器（V2）
-
-- [ ] T128 [P] 研究Vocus網頁結構
-- [ ] T129 [P] 實作VocusAdapter
-- [ ] T130 測試方格子擷取
-
-### 通用爬蟲模式（V2）
-
-- [ ] T131 [P] 實作GenericAdapter（CSS Selector配置）
-- [ ] T132 實作使用者自定義爬蟲規則UI
-
----
-
-## Phase 12: Chrome擴充套件（V3）
-
-**目的**: 開發Chrome擴充套件版本（不在MVP範圍）
-
-- [ ] T133 建立Manifest V3配置
-- [ ] T134 [P] 實作Background Service Worker
-- [ ] T135 [P] 實作Content Scripts（頁面注入）
-- [ ] T136 [P] 實作Popup介面
-- [ ] T137 [P] 實作擴充套件與網頁版資料同步
-- [ ] T138 提交Chrome Web Store
-
----
-
-## 任務統計與時程
-
-| 階段 | 任務數 | 預估時間 | 可並行 |
-|------|-------|---------|--------|
-| Phase 1: Setup | 10 | 0.5天 | 100% |
-| Phase 2: Foundation | 22 | 2天 | ~70% |
-| Phase 3: 認證系統 | 10 | 1天 | ~60% |
-| Phase 4: Facebook | 11 | 1週 | ~50% |
-| Phase 5: Instagram | 11 | 1週 | ~50% |
-| Phase 6: 擷取引擎 | 7 | 2天 | ~70% |
-| Phase 7: UI實作 | 17 | 1週 | ~60% |
-| Phase 8: 資料處理 | 5 | 1天 | ~80% |
-| Phase 9: 整合測試 | 12 | 2天 | ~60% |
-| Phase 10: Polish | 19 | 3天 | ~70% |
-| **MVP總計** | **124任務** | **4週** | **~65%** |
-| Phase 11: V2平台 | 8 | +2週 | - |
-| Phase 12: Chrome擴充 | 6 | +2週 | - |
-| **完整總計** | **138任務** | **8週** | - |
-
----
-
-## MVP路徑（優先）
-
-**Week 1**: Setup + Foundation + 認證（T001-T042）  
-**Week 2**: Facebook適配器完整實作（T043-T053）  
-**Week 3**: Instagram適配器完整實作（T054-T064）  
-**Week 4**: 擷取引擎 + UI + 測試 + 部署（T065-T124）  
-
-**MVP交付**: FB + IG 留言擷取工具，網頁版
-
----
-
-## 執行策略
-
-### MVP優先（推薦）
+### 階段依賴
 
 ```
-專注前124個任務
-4週完成核心功能
-驗證產品價值
+Phase 1 (Setup) → Phase 2 (Foundational) → [US1, US2, US3, US4] → Phase 8 (Polish)
+                                              ↓
+                                           Phase 7 (US5 - V2階段)
 ```
 
-### 完整產品
+### 用戶故事依賴
 
+| 故事 | 依賴 | 說明 |
+|------|------|------|
+| US1 | Phase 2 | 平台識別與認證（MVP核心）|
+| US2 | US1 | 需要認證完成才能擷取 |
+| US3 | US2 | 需要有資料才能顯示 |
+| US4 | US3 | 需要有資料才能匯出 |
+| US5 | US1-US4 | V2階段，需網頁版穩定 |
+
+### 平行執行機會
+
+**Phase 1**:
+```bash
+# 同時執行
+T003: 安裝核心依賴
+T004: 安裝開發依賴
+T005: 配置 Tailwind
+T006: 配置 TypeScript
+T007: ESLint + Prettier
 ```
-執行全部138個任務
-8週完成（包含V2平台 + Chrome擴充）
-完整的多平台產品
+
+**Phase 2**:
+```bash
+# 同時執行
+T010-T013: 所有類型定義
+T019-T022: 所有 UI 基礎組件
+```
+
+**Phase 3 (US1)**:
+```bash
+# 同時執行
+T023: Facebook URL 解析器
+T024: Instagram URL 解析器
+# 完成後同時執行
+T025: FacebookAdapter
+T026: InstagramAdapter
 ```
 
 ---
 
-**任務清單完成**: 2025-11-20  
-**總任務數**: 124（MVP），138（完整）  
-**預估時程**: 4週（MVP），8週（完整）  
-**下一步**: 開始實作或繼續V2/V3規劃
+## Implementation Strategy
 
+### MVP First（僅 US1 + US2 + US3 + US4）
 
+1. 完成 Phase 1: Setup
+2. 完成 Phase 2: Foundational
+3. 完成 Phase 3: US1（平台識別 + 認證）
+4. **驗證**: 測試 US1 獨立運作
+5. 完成 Phase 4: US2（擷取執行）
+6. 完成 Phase 5: US3（資料顯示）
+7. 完成 Phase 6: US4（Excel 匯出）
+8. **MVP 完成** 🎉
+9. 部署測試版
+
+### V2 階段
+
+1. 完成 Phase 7: US5（Chrome 擴充套件）
+2. 完成 Phase 8: Polish
+3. 發布正式版
+
+### 時程估計
+
+| 階段 | 任務數 | 預估時間 |
+|------|--------|----------|
+| Phase 1-2 | 22 | 1 週 |
+| Phase 3 (US1) | 13 | 1 週 |
+| Phase 4 (US2) | 11 | 1 週 |
+| Phase 5-6 (US3+US4) | 13 | 1 週 |
+| **MVP 總計** | **59** | **4 週** |
+| Phase 7 (US5) | 7 | 2 週 |
+| Phase 8 (Polish) | 2 | 0.5 週 |
+| **完整版總計** | **68** | **6.5 週** |
+
+---
+
+## Notes
+
+- 所有檔案路徑以 `universal-scraper/frontend/` 為基準
+- [P] 任務可平行執行
+- [US?] 標記對應的用戶故事
+- 每完成邏輯群組後提交 commit
+- MVP 完成時可先部署驗證
+- US5（Chrome 擴充）安排在 V2 階段
+
+---
+
+**Generated**: 2025-12-02  
+**Total Tasks**: 68  
+**MVP Tasks**: 59  
+**Estimated MVP Time**: 4 週
