@@ -13,20 +13,20 @@
 
 ---
 
-## Phase 1: Setup（專案初始化）
+## Phase 1: Setup（專案初始化）✅ 完成
 
 **Purpose**: 建立專案基礎架構
 
-- [ ] T001 建立專案資料夾結構 `universal-scraper/frontend/` 依據 plan.md
-- [ ] T002 初始化 Vite + React + TypeScript 專案 `pnpm create vite frontend --template react-ts`
-- [ ] T003 [P] 安裝核心依賴 `dexie ag-grid-react xlsx axios crypto-js`
-- [ ] T004 [P] 安裝開發依賴 `tailwindcss vitest @testing-library/react`
-- [ ] T005 [P] 配置 Tailwind CSS 在 `frontend/tailwind.config.js`
-- [ ] T006 [P] 配置 TypeScript 嚴格模式在 `frontend/tsconfig.json`
-- [ ] T007 [P] 建立 ESLint + Prettier 配置檔案
-- [ ] T008 建立環境變數配置 `frontend/.env.example` 和 `.env.local`
+- [x] T001 建立專案資料夾結構 `universal-scraper/frontend/` 依據 plan.md
+- [x] T002 初始化 Vite + React + TypeScript 專案 `pnpm create vite frontend --template react-ts`
+- [x] T003 [P] 安裝核心依賴 `dexie ag-grid-react xlsx axios crypto-js`
+- [x] T004 [P] 安裝開發依賴 `tailwindcss vitest @testing-library/react`
+- [x] T005 [P] 配置 Tailwind CSS 在 `frontend/tailwind.config.js`
+- [x] T006 [P] 配置 TypeScript 嚴格模式在 `frontend/tsconfig.json`
+- [x] T007 [P] 建立 ESLint + Prettier 配置檔案
+- [x] T008 建立環境變數配置 `frontend/.env.example` 和 `.env.local`
 
-**Checkpoint**: 專案結構就緒，可執行 `pnpm dev`
+**Checkpoint**: ✅ 專案結構就緒，可執行 `npm run dev`
 
 ---
 
