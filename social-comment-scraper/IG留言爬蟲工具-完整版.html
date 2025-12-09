@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instagram 留言爬蟲工具</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Microsoft JhengHei", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .step {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+        }
+        
+        .step-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+        
+        .input-group {
+            margin: 15px 0;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .input-group input,
+        .input-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            margin: 15px 0;
+        }
+        
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: white;
+            margin-right: 10px;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-success {
+            background: #10b981;
+        }
+        
+        .btn-success:hover {
+            background: #059669;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+        }
+        
+        .btn-info {
+            background: #0ea5e9;
+        }
+        
+        .alert {
+            padding: 15px 20px;
+            border-radius: 6px;
+            margin: 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .alert-success {
+            background: #d1fae5;
+            color: #065f46;
+            border-left: 4px solid #10b981;
+        }
+        
+        .alert-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border-left: 4px solid #ef4444;
+        }
+        
+        .alert-info {
+            background: #dbeafe;
+            color: #1e40af;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .progress {
+            background: #e5e7eb;
+            border-radius: 6px;
+            height: 30px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+        
+        .progress-bar {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            height: 100%;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .results-container {
+            margin-top: 30px;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        
+        .comments-display {
+            max-height: 600px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 20px;
+            background: white;
+        }
+        
+        .comment-item {
+            padding: 15px;
+            border-bottom: 1px solid #f1f3f5;
+            cursor: pointer;
+        }
+        
+        .comment-item:hover {
+            background: #f8f9fa;
+        }
+        
+        .comment-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .commenter {
+            font-weight: bold;
+            color: #495057;
+        }
+        
+        .comment-meta {
+            font-size: 12px;
+            color: #6c757d;
+        }
+        
+        .comment-content {
+            color: #212529;
+            line-height: 1.5;
+            margin-bottom: 8px;
+        }
+        
+        .comment-stats {
+            font-size: 12px;
+            color: #6c757d;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .copy-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        
+        .copy-btn:hover {
+            background: #5a6268;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📸 Instagram 留言爬蟲工具</h1>
+            <p>輸入Token → 驗證 → 選擇爬取方式 → 查看結果 → 複製或匯出</p>
+        </div>
+        
+        <div class="content">
+            <!-- 步驟1: 輸入Token -->
+            <div class="step" id="step1">
+                <div class="step-title">步驟 1️⃣: 輸入您的 Instagram API Token</div>
+                <div id="tokenAlert"></div>
+                <div class="input-group">
+                    <label>Instagram Access Token（可從Meta開發者平台取得）</label>
+                    <input type="text" id="tokenInput" placeholder="貼上您的Instagram Token...">
+                    <small style="color: #6c757d; display: block; margin-top: 5px;">
+                        💡 提示：這個Token會暫存在您的瀏覽器中，不會傳送到任何伺服器
+                    </small>
+                </div>
+                <button class="btn btn-primary" onclick="verifyToken()">🔍 驗證Token</button>
+                <button class="btn btn-secondary" onclick="showTokenHelp()">❓ 如何取得Token</button>
+            </div>
+            
+            <!-- 步驟2: 選擇爬取模式 -->
+            <div class="step hidden" id="step2">
+                <div class="step-title">步驟 2️⃣: 選擇爬取模式</div>
+                <div class="radio-group">
+                    <label>
+                        <input type="radio" name="mode" value="post" checked>
+                        特定文章模式（爬取單一貼文的留言）
+                    </label>
+                    <label>
+                        <input type="radio" name="mode" value="account">
+                        帳號批次模式（爬取帳號下多個貼文的留言）
+                    </label>
+                </div>
+                
+                <div id="postMode">
+                    <div class="input-group">
+                        <label>Instagram 貼文網址</label>
+                        <input type="text" id="postUrl" placeholder="例如：https://www.instagram.com/p/ABC123/">
+                    </div>
+                </div>
+                
+                <div id="accountMode" class="hidden">
+                    <div class="input-group">
+                        <label>Instagram 帳號網址或用戶ID</label>
+                        <input type="text" id="accountInput" placeholder="例如：https://www.instagram.com/ssh.ado 或 33130167256574519">
+                    </div>
+                    <div class="input-group">
+                        <label>爬取幾個最新貼文</label>
+                        <select id="postLimit">
+                            <option value="5">5個貼文</option>
+                            <option value="10" selected>10個貼文</option>
+                            <option value="20">20個貼文</option>
+                            <option value="50">50個貼文</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button class="btn btn-success" onclick="startScraping()">🚀 開始爬取</button>
+            </div>
+            
+            <!-- 步驟3: 爬取進度 -->
+            <div class="step hidden" id="step3">
+                <div class="step-title">步驟 3️⃣: 爬取進度</div>
+                <div id="progressInfo"></div>
+                <div class="progress">
+                    <div class="progress-bar" id="progressBar" style="width: 0%">0%</div>
+                </div>
+                <div id="progressDetails"></div>
+            </div>
+            
+            <!-- 步驟4: 顯示結果 -->
+            <div class="results-container hidden" id="step4">
+                <div class="step">
+                    <div class="step-title">步驟 4️⃣: 爬取結果</div>
+                    
+                    <div class="stats">
+                        <div class="stat-card">
+                            <div class="stat-value" id="totalComments">0</div>
+                            <div class="stat-label">總留言數</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="totalPosts">0</div>
+                            <div class="stat-label">處理貼文數</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="scrapeTime">0</div>
+                            <div class="stat-label">處理時間（秒）</div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin: 20px 0;">
+                        <button class="btn btn-success" onclick="exportToExcel()">📥 匯出為Excel</button>
+                        <button class="btn btn-info" onclick="copyAllComments()">📋 複製所有留言</button>
+                        <button class="btn btn-secondary" onclick="reset()">🔄 重新開始</button>
+                    </div>
+                    
+                    <div class="input-group">
+                        <input type="text" id="searchBox" placeholder="🔍 搜尋留言內容..." onkeyup="filterComments()">
+                    </div>
+                    
+                    <div class="comments-display" id="commentsDisplay"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentToken = '';
+        let allComments = [];
+        let startTime = 0;
+        
+        // 監聽模式切換
+        document.querySelectorAll('input[name="mode"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                if (e.target.value === 'post') {
+                    document.getElementById('postMode').classList.remove('hidden');
+                    document.getElementById('accountMode').classList.add('hidden');
+                } else {
+                    document.getElementById('postMode').classList.add('hidden');
+                    document.getElementById('accountMode').classList.remove('hidden');
+                }
+            });
+        });
+        
+        // 步驟1: 驗證Token
+        async function verifyToken() {
+            const token = document.getElementById('tokenInput').value.trim();
+            const alertDiv = document.getElementById('tokenAlert');
+            
+            if (!token) {
+                alertDiv.innerHTML = '<div class="alert alert-error">⚠️ 請輸入Token</div>';
+                return;
+            }
+            
+            alertDiv.innerHTML = '<div class="alert alert-info">🔍 正在驗證Token...</div>';
+            
+            try {
+                // 測試Token
+                const response = await fetch(`https://graph.facebook.com/v18.0/me?access_token=${token}`);
+                const data = await response.json();
+                
+                if (data.error) {
+                    alertDiv.innerHTML = `<div class="alert alert-error">❌ Token無效：${data.error.message}<br><small>錯誤代碼：${data.error.code}</small></div>`;
+                    return;
+                }
+                
+                // Token有效
+                currentToken = token;
+                localStorage.setItem('ig_token', token);
+                
+                alertDiv.innerHTML = `<div class="alert alert-success">✅ Token驗證成功！<br>帳號ID：${data.id}${data.username ? ' | 使用者名稱：' + data.username : ''}</div>`;
+                
+                // 顯示步驟2
+                document.getElementById('step2').classList.remove('hidden');
+                
+            } catch (error) {
+                alertDiv.innerHTML = `<div class="alert alert-error">❌ 驗證失敗：${error.message}</div>`;
+            }
+        }
+        
+        // 顯示Token取得說明
+        function showTokenHelp() {
+            alert(`如何取得Instagram Token：
+
+方法1: Graph API Explorer（推薦）
+1. 前往：https://developers.facebook.com/tools/explorer/
+2. 選擇您的應用程式
+3. 點擊「Get Token」→「Get User Access Token」
+4. 勾選instagram_basic權限
+5. 複製Token
+
+方法2: 使用您提供的Token
+如果您已有Token，直接貼上即可。
+
+注意：Token必須有instagram_basic權限才能使用。`);
+        }
+        
+        // 步驟2: 開始爬取
+        async function startScraping() {
+            const mode = document.querySelector('input[name="mode"]:checked').value;
+            
+            document.getElementById('step3').classList.remove('hidden');
+            startTime = Date.now();
+            
+            if (mode === 'post') {
+                await scrapePost();
+            } else {
+                await scrapeAccount();
+            }
+        }
+        
+        // 爬取單一貼文
+        async function scrapePost() {
+            const postUrl = document.getElementById('postUrl').value.trim();
+            
+            if (!postUrl) {
+                alert('請輸入貼文網址');
+                return;
+            }
+            
+            // 解析media ID
+            const mediaId = parseMediaId(postUrl);
+            if (!mediaId) {
+                alert('無法解析貼文網址，請確認格式正確');
+                return;
+            }
+            
+            updateProgress(10, '正在取得貼文資訊...');
+            
+            try {
+                const comments = await fetchComments(mediaId);
+                displayResults(comments, [{ id: mediaId, url: postUrl }]);
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+        
+        // 爬取帳號
+        async function scrapeAccount() {
+            const accountInput = document.getElementById('accountInput').value.trim();
+            const postLimit = parseInt(document.getElementById('postLimit').value);
+            
+            if (!accountInput) {
+                alert('請輸入帳號網址或用戶ID');
+                return;
+            }
+            
+            let userId = accountInput;
+            if (accountInput.includes('instagram.com')) {
+                userId = parseUsername(accountInput);
+            }
+            
+            updateProgress(5, '正在取得帳號資訊...');
+            
+            try {
+                // 取得帳號的貼文列表
+                updateProgress(10, `正在取得最近${postLimit}個貼文...`);
+                const posts = await fetchUserMedia(userId, postLimit);
+                
+                if (posts.length === 0) {
+                    showError('找不到貼文或帳號不存在');
+                    return;
+                }
+                
+                // 對每個貼文抓取留言
+                allComments = [];
+                for (let i = 0; i < posts.length; i++) {
+                    const post = posts[i];
+                    const progress = 10 + (i / posts.length) * 80;
+                    updateProgress(progress, `正在處理第 ${i+1}/${posts.length} 個貼文...`);
+                    
+                    const comments = await fetchComments(post.id);
+                    comments.forEach(c => {
+                        c.sourcePost = post;
+                        allComments.push(c);
+                    });
+                    
+                    // 避免觸發速率限制
+                    await sleep(500);
+                }
+                
+                updateProgress(100, '完成！');
+                displayResults(allComments, posts);
+                
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+        
+        // 取得用戶的貼文列表
+        async function fetchUserMedia(userId, limit) {
+            const url = `https://graph.facebook.com/v18.0/${userId}/media?fields=id,caption,timestamp,permalink&limit=${limit}&access_token=${currentToken}`;
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            if (data.error) {
+                throw new Error(data.error.message);
+            }
+            
+            return data.data || [];
+        }
+        
+        // 取得貼文留言
+        async function fetchComments(mediaId) {
+            const comments = [];
+            let nextUrl = `https://graph.facebook.com/v18.0/${mediaId}/comments?fields=id,username,text,timestamp,like_count&limit=50&access_token=${currentToken}`;
+            
+            while (nextUrl) {
+                const response = await fetch(nextUrl);
+                const data = await response.json();
+                
+                if (data.error) {
+                    // 如果沒有留言或無權限，返回空陣列
+                    if (data.error.code === 100) {
+                        break;
+                    }
+                    throw new Error(data.error.message);
+                }
+                
+                if (data.data) {
+                    comments.push(...data.data);
+                }
+                
+                nextUrl = data.paging?.next || null;
+                
+                // 避免過快請求
+                if (nextUrl) await sleep(200);
+            }
+            
+            return comments;
+        }
+        
+        // 解析Media ID
+        function parseMediaId(url) {
+            const match = url.match(/instagram\.com\/p\/([A-Za-z0-9_-]+)/);
+            return match ? match[1] : null;
+        }
+        
+        // 解析Username
+        function parseUsername(url) {
+            const match = url.match(/instagram\.com\/([A-Za-z0-9._]+)/);
+            return match ? match[1] : null;
+        }
+        
+        // 更新進度
+        function updateProgress(percent, text) {
+            document.getElementById('progressBar').style.width = percent + '%';
+            document.getElementById('progressBar').textContent = Math.round(percent) + '%';
+            document.getElementById('progressDetails').innerHTML = `<p style="text-align: center; color: #6c757d; margin-top: 10px;">${text}</p>`;
+        }
+        
+        // 顯示結果
+        function displayResults(comments, posts) {
+            const endTime = Date.now();
+            const duration = ((endTime - startTime) / 1000).toFixed(1);
+            
+            document.getElementById('step4').classList.remove('hidden');
+            document.getElementById('totalComments').textContent = comments.length;
+            document.getElementById('totalPosts').textContent = posts.length;
+            document.getElementById('scrapeTime').textContent = duration;
+            
+            allComments = comments;
+            renderComments(comments);
+        }
+        
+        // 渲染留言
+        function renderComments(comments) {
+            const display = document.getElementById('commentsDisplay');
+            
+            if (comments.length === 0) {
+                display.innerHTML = '<p style="text-align: center; color: #6c757d; padding: 40px;">沒有留言資料</p>';
+                return;
+            }
+            
+            display.innerHTML = comments.map((c, index) => `
+                <div class="comment-item" id="comment-${index}">
+                    <div class="comment-header">
+                        <span class="commenter">@${c.username || '未知使用者'}</span>
+                        <span class="comment-meta">
+                            ${formatDate(c.timestamp)}
+                            <button class="copy-btn" onclick="copyComment(${index})">複製</button>
+                        </span>
+                    </div>
+                    <div class="comment-content">${c.text || c.content || ''}</div>
+                    <div class="comment-stats">
+                        👍 ${c.like_count || 0} 個讚
+                        ${c.sourcePost ? ` | 來源：<a href="${c.sourcePost.permalink || '#'}" target="_blank">貼文 ${comments.filter(x => x.sourcePost?.id === c.sourcePost.id).indexOf(c) + 1}</a>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // 篩選留言
+        function filterComments() {
+            const keyword = document.getElementById('searchBox').value.toLowerCase();
+            if (!keyword) {
+                renderComments(allComments);
+                return;
+            }
+            
+            const filtered = allComments.filter(c => 
+                (c.text && c.text.toLowerCase().includes(keyword)) ||
+                (c.username && c.username.toLowerCase().includes(keyword))
+            );
+            renderComments(filtered);
+        }
+        
+        // 複製單則留言
+        function copyComment(index) {
+            const comment = allComments[index];
+            const text = `@${comment.username}\n${comment.text}\n時間：${formatDate(comment.timestamp)}\n按讚：${comment.like_count || 0}`;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                showAlert('✅ 已複製到剪貼簿', 'success', 2000);
+            });
+        }
+        
+        // 複製所有留言
+        function copyAllComments() {
+            if (allComments.length === 0) {
+                alert('沒有資料可複製');
+                return;
+            }
+            
+            const text = allComments.map(c => 
+                `@${c.username}\t${c.text}\t${formatDate(c.timestamp)}\t${c.like_count || 0}`
+            ).join('\n');
+            
+            const header = '留言者\t留言內容\t時間\t按讚數\n';
+            
+            navigator.clipboard.writeText(header + text).then(() => {
+                showAlert(`✅ 已複製 ${allComments.length} 則留言到剪貼簿（Tab分隔，可直接貼到Excel）`, 'success', 3000);
+            });
+        }
+        
+        // 匯出Excel
+        function exportToExcel() {
+            if (allComments.length === 0) {
+                alert('沒有資料可匯出');
+                return;
+            }
+            
+            const exportData = allComments.map(c => ({
+                '留言者': c.username || '未知',
+                '留言內容': c.text || '',
+                '時間': formatDate(c.timestamp),
+                '按讚數': c.like_count || 0,
+                '來源貼文': c.sourcePost?.permalink || ''
+            }));
+            
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, '留言資料');
+            
+            ws['!cols'] = [
+                { wch: 20 },
+                { wch: 50 },
+                { wch: 20 },
+                { wch: 10 },
+                { wch: 40 }
+            ];
+            
+            const timestamp = new Date().toISOString().slice(0,16).replace('T', '_').replace(/:/g, '');
+            XLSX.writeFile(wb, `Instagram留言_${timestamp}.xlsx`);
+            
+            showAlert('📥 Excel檔案已下載', 'success');
+        }
+        
+        // 格式化日期
+        function formatDate(timestamp) {
+            if (!timestamp) return '';
+            const date = new Date(timestamp);
+            return date.toLocaleString('zh-TW', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
+        // 顯示錯誤
+        function showError(message) {
+            document.getElementById('progressDetails').innerHTML = `<div class="alert alert-error">❌ ${message}</div>`;
+        }
+        
+        // 顯示提示
+        function showAlert(message, type, duration = 3000) {
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            alert.style.position = 'fixed';
+            alert.style.top = '20px';
+            alert.style.right = '20px';
+            alert.style.zIndex = '9999';
+            alert.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+            document.body.appendChild(alert);
+            
+            setTimeout(() => alert.remove(), duration);
+        }
+        
+        // 重置
+        function reset() {
+            if (confirm('確定要重新開始嗎？這會清除當前結果。')) {
+                allComments = [];
+                document.getElementById('step3').classList.add('hidden');
+                document.getElementById('step4').classList.add('hidden');
+                document.getElementById('progressBar').style.width = '0%';
+            }
+        }
+        
+        // 延遲
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+        
+        // 載入儲存的Token
+        window.addEventListener('load', () => {
+            const saved = localStorage.getItem('ig_token');
+            if (saved) {
+                document.getElementById('tokenInput').value = saved;
+                showAlert('💡 已載入上次使用的Token', 'info', 2000);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facebook 留言整理工具</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Microsoft JhengHei", sans-serif;
+            background: linear-gradient(135deg, #1877f2 0%, #0a66c2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1877f2 0%, #0a66c2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 { font-size: 32px; margin-bottom: 10px; }
+        
+        .content { padding: 30px; }
+        
+        .step {
+            background: #f8f9fa;
+            border-left: 4px solid #1877f2;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+        }
+        
+        .step-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1877f2;
+            margin-bottom: 15px;
+        }
+        
+        .input-group {
+            margin: 15px 0;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            color: white;
+            margin: 5px;
+        }
+        
+        .btn-primary { background: #1877f2; }
+        .btn-primary:hover { background: #166fe5; }
+        .btn-success { background: #10b981; }
+        .btn-info { background: #0ea5e9; }
+        .btn-danger { background: #ef4444; }
+        
+        .alert {
+            padding: 15px 20px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+        
+        .alert-success { background: #d1fae5; color: #065f46; border-left: 4px solid #10b981; }
+        .alert-error { background: #fee2e2; color: #991b1b; border-left: 4px solid #ef4444; }
+        .alert-info { background: #dbeafe; color: #1e40af; border-left: 4px solid #3b82f6; }
+        
+        .hidden { display: none; }
+        
+        .progress {
+            background: #e5e7eb;
+            border-radius: 6px;
+            height: 30px;
+            margin: 15px 0;
+        }
+        
+        .progress-bar {
+            background: #1877f2;
+            height: 100%;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            transition: width 0.3s;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        .stat-value { font-size: 32px; font-weight: bold; color: #1877f2; }
+        .stat-label { font-size: 14px; color: #6c757d; margin-top: 5px; }
+        
+        .comments-display {
+            max-height: 600px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            margin-top: 20px;
+        }
+        
+        .comment-item {
+            padding: 15px;
+            border-bottom: 1px solid #f1f3f5;
+        }
+        
+        .comment-item:hover { background: #f8f9fa; }
+        
+        .comment-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .commenter {
+            font-weight: bold;
+            color: #1877f2;
+        }
+        
+        .comment-content {
+            color: #212529;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+        
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            margin: 15px 0;
+        }
+        
+        .help-text {
+            font-size: 13px;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📘 Facebook 留言爬蟲工具</h1>
+            <p>輸入Token → 貼上網址 → 自動爬取留言 → 編輯整理 → 匯出Excel</p>
+        </div>
+        
+        <div class="content">
+            <!-- 步驟1: Token -->
+            <div class="step">
+                <div class="step-title">步驟 1️⃣: 輸入您的 Facebook Access Token</div>
+                <div id="tokenAlert"></div>
+                <div class="input-group">
+                    <label>Facebook Access Token</label>
+                    <input type="text" id="tokenInput" placeholder="貼上您的Facebook Token...">
+                    <div class="help-text">
+                        💡 如何取得：<a href="https://developers.facebook.com/tools/explorer/" target="_blank">Graph API Explorer</a> 
+                        → Get Token → Get User Access Token → 勾選 pages_read_engagement
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="verifyToken()">🔍 驗證Token</button>
+                <button class="btn btn-info" onclick="testWithSample()">✨ 使用範例資料測試</button>
+            </div>
+            
+            <!-- 步驟2: 選擇模式 -->
+            <div class="step hidden" id="step2">
+                <div class="step-title">步驟 2️⃣: 選擇爬取方式</div>
+                <div class="radio-group">
+                    <label>
+                        <input type="radio" name="mode" value="post" checked>
+                        單一貼文模式
+                    </label>
+                    <label>
+                        <input type="radio" name="mode" value="page">
+                        粉專批次模式
+                    </label>
+                </div>
+                
+                <div id="postMode">
+                    <div class="input-group">
+                        <label>Facebook 貼文網址</label>
+                        <input type="text" id="postUrl" placeholder="例如：https://www.facebook.com/share/p/17qJZ8zHpt/">
+                        <div class="help-text">支援各種Facebook貼文連結格式</div>
+                    </div>
+                </div>
+                
+                <div id="pageMode" class="hidden">
+                    <div class="input-group">
+                        <label>Facebook 粉絲專頁網址或ID</label>
+                        <input type="text" id="pageInput" placeholder="例如：https://www.facebook.com/yourpage">
+                    </div>
+                    <div class="input-group">
+                        <label>爬取幾篇最新貼文</label>
+                        <select id="postLimit">
+                            <option value="5">5篇貼文</option>
+                            <option value="10" selected>10篇貼文</option>
+                            <option value="20">20篇貼文</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button class="btn btn-success" onclick="startScrape()">🚀 開始爬取</button>
+            </div>
+            
+            <!-- 步驟3: 進度 -->
+            <div class="step hidden" id="step3">
+                <div class="step-title">步驟 3️⃣: 爬取進度</div>
+                <div id="progressInfo"></div>
+                <div class="progress">
+                    <div class="progress-bar" id="progressBar" style="width: 0%">0%</div>
+                </div>
+                <div id="progressDetails"></div>
+            </div>
+            
+            <!-- 步驟4: 結果 -->
+            <div class="step hidden" id="step4">
+                <div class="step-title">步驟 4️⃣: 爬取結果</div>
+                
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalComments">0</div>
+                        <div class="stat-label">總留言數</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalPosts">0</div>
+                        <div class="stat-label">處理貼文</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="scrapeTime">0</div>
+                        <div class="stat-label">處理時間（秒）</div>
+                    </div>
+                </div>
+                
+                <div style="margin: 20px 0;">
+                    <button class="btn btn-success" onclick="exportExcel()">📥 匯出Excel</button>
+                    <button class="btn btn-info" onclick="copyAll()">📋 複製所有留言</button>
+                    <input type="text" id="searchBox" placeholder="🔍 搜尋留言..." 
+                        style="width: 300px; padding: 10px; border: 2px solid #dee2e6; border-radius: 6px; margin-left: 10px;"
+                        onkeyup="filterComments()">
+                </div>
+                
+                <div class="comments-display" id="commentsDisplay"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let token = '';
+        let allComments = [];
+        let startTime = 0;
+        
+        // 監聽模式切換
+        document.querySelectorAll('input[name="mode"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                document.getElementById('postMode').classList.toggle('hidden', e.target.value !== 'post');
+                document.getElementById('pageMode').classList.toggle('hidden', e.target.value !== 'page');
+            });
+        });
+        
+        // 驗證Token
+        async function verifyToken() {
+            const inputToken = document.getElementById('tokenInput').value.trim();
+            const alertDiv = document.getElementById('tokenAlert');
+            
+            if (!inputToken) {
+                alertDiv.innerHTML = '<div class="alert alert-error">⚠️ 請輸入Token</div>';
+                return;
+            }
+            
+            alertDiv.innerHTML = '<div class="alert alert-info">🔍 正在驗證Token...</div>';
+            
+            try {
+                const response = await fetch(`https://graph.facebook.com/v18.0/me?fields=id,name&access_token=${inputToken}`);
+                const data = await response.json();
+                
+                if (data.error) {
+                    alertDiv.innerHTML = `<div class="alert alert-error">❌ Token無效：${data.error.message}<br><small>錯誤代碼：${data.error.code}</small></div>`;
+                    return;
+                }
+                
+                token = inputToken;
+                localStorage.setItem('fb_token', token);
+                
+                alertDiv.innerHTML = `<div class="alert alert-success">✅ Token驗證成功！<br>帳號：${data.name} (ID: ${data.id})</div>`;
+                document.getElementById('step2').classList.remove('hidden');
+                
+            } catch (error) {
+                alertDiv.innerHTML = `<div class="alert alert-error">❌ 驗證失敗：${error.message}</div>`;
+            }
+        }
+        
+        // 使用範例資料測試
+        function testWithSample() {
+            allComments = [
+                {
+                    id: 1, from: {name: '王小明', id: '123'}, message: '很實用的資訊，感謝分享！',
+                    created_time: '2025-11-18T10:30:00+0000', like_count: 15, sourcePost: '貼文1'
+                },
+                {
+                    id: 2, from: {name: '李小華', id: '456'}, message: '請問有更詳細的教學嗎？',
+                    created_time: '2025-11-18T11:00:00+0000', like_count: 8, sourcePost: '貼文1'
+                },
+                {
+                    id: 3, from: {name: '張大明', id: '789'}, message: '已分享給朋友了！',
+                    created_time: '2025-11-18T12:15:00+0000', like_count: 12, sourcePost: '貼文2'
+                },
+                {
+                    id: 4, from: {name: 'Amy Chen', id: '321'}, message: 'Very helpful, thank you!',
+                    created_time: '2025-11-18T13:20:00+0000', like_count: 20, sourcePost: '貼文2'
+                },
+                {
+                    id: 5, from: {name: '陳小芳', id: '654'}, message: '收藏了，之後慢慢看',
+                    created_time: '2025-11-18T14:00:00+0000', like_count: 6, sourcePost: '貼文3'
+                },
+                {
+                    id: 6, from: {name: '林志明', id: '987'}, message: '寫得很清楚，讚👍',
+                    created_time: '2025-11-18T15:30:00+0000', like_count: 10, sourcePost: '貼文3'
+                },
+                {
+                    id: 7, from: {name: '黃小美', id: '147'}, message: '正好需要這個資訊',
+                    created_time: '2025-11-19T09:00:00+0000', like_count: 5, sourcePost: '貼文4'
+                },
+                {
+                    id: 8, from: {name: 'John Lee', id: '258'}, message: 'Excellent content! 🌟',
+                    created_time: '2025-11-19T10:00:00+0000', like_count: 18, sourcePost: '貼文4'
+                },
+                {
+                    id: 9, from: {name: '吳大勇', id: '369'}, message: '已追蹤專頁了',
+                    created_time: '2025-11-19T11:00:00+0000', like_count: 7, sourcePost: '貼文5'
+                },
+                {
+                    id: 10, from: {name: '劉小婷', id: '741'}, message: '期待下一篇文章',
+                    created_time: '2025-11-19 12:00:00+0000', like_count: 11, sourcePost: '貼文5'
+                }
+            ];
+            
+            document.getElementById('step2').classList.add('hidden');
+            document.getElementById('step3').classList.add('hidden');
+            displayResults(allComments, [{id: '1', name: '範例貼文'}]);
+            showAlert('✨ 已載入10則範例留言，您可以體驗所有功能！', 'info', 3000);
+        }
+        
+        // 開始爬取
+        async function startScrape() {
+            const mode = document.querySelector('input[name="mode"]:checked').value;
+            
+            document.getElementById('step3').classList.remove('hidden');
+            startTime = Date.now();
+            
+            if (mode === 'post') {
+                await scrapePost();
+            } else {
+                await scrapePage();
+            }
+        }
+        
+        // 爬取單一貼文
+        async function scrapePost() {
+            const postUrl = document.getElementById('postUrl').value.trim();
+            
+            if (!postUrl) {
+                alert('請輸入貼文網址');
+                return;
+            }
+            
+            const postId = parsePostId(postUrl);
+            if (!postId) {
+                showProgress(0, '無法解析貼文網址', 'error');
+                return;
+            }
+            
+            showProgress(10, '正在取得貼文資訊...');
+            
+            try {
+                const comments = await fetchComments(postId);
+                displayResults(comments, [{id: postId, url: postUrl}]);
+            } catch (error) {
+                showProgress(0, '❌ 錯誤：' + error.message, 'error');
+            }
+        }
+        
+        // 爬取粉專
+        async function scrapePage() {
+            const pageInput = document.getElementById('pageInput').value.trim();
+            const limit = parseInt(document.getElementById('postLimit').value);
+            
+            if (!pageInput) {
+                alert('請輸入粉專網址');
+                return;
+            }
+            
+            let pageId = pageInput;
+            if (pageInput.includes('facebook.com')) {
+                pageId = parsePageId(pageInput);
+            }
+            
+            showProgress(5, '正在取得粉專資訊...');
+            
+            try {
+                // 取得貼文列表
+                showProgress(10, `正在取得最近${limit}篇貼文...`);
+                const posts = await fetchPosts(pageId, limit);
+                
+                if (posts.length === 0) {
+                    showProgress(0, '❌ 找不到貼文或無權限存取', 'error');
+                    return;
+                }
+                
+                // 對每個貼文抓留言
+                allComments = [];
+                for (let i = 0; i < posts.length; i++) {
+                    const post = posts[i];
+                    const progress = 10 + (i / posts.length) * 80;
+                    showProgress(progress, `正在處理第 ${i+1}/${posts.length} 篇貼文...`);
+                    
+                    const comments = await fetchComments(post.id);
+                    comments.forEach(c => {
+                        c.sourcePost = post.message?.substring(0, 30) || `貼文${i+1}`;
+                        c.sourceUrl = `https://facebook.com/${post.id}`;
+                        allComments.push(c);
+                    });
+                    
+                    await sleep(300);
+                }
+                
+                showProgress(100, '完成！');
+                displayResults(allComments, posts);
+                
+            } catch (error) {
+                showProgress(0, '❌ 錯誤：' + error.message, 'error');
+            }
+        }
+        
+        // 取得粉專貼文
+        async function fetchPosts(pageId, limit) {
+            const url = `https://graph.facebook.com/v18.0/${pageId}/posts?fields=id,message,created_time&limit=${limit}&access_token=${token}`;
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            if (data.error) throw new Error(data.error.message);
+            return data.data || [];
+        }
+        
+        // 取得留言
+        async function fetchComments(postId) {
+            const comments = [];
+            let url = `https://graph.facebook.com/v18.0/${postId}/comments?fields=id,from{name,id},message,created_time,like_count&limit=100&access_token=${token}`;
+            
+            while (url) {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.error) {
+                    if (data.error.code === 100) break;
+                    throw new Error(data.error.message);
+                }
+                
+                if (data.data) comments.push(...data.data);
+                url = data.paging?.next || null;
+                
+                if (url) await sleep(200);
+            }
+            
+            return comments;
+        }
+        
+        // 解析貼文ID
+        function parsePostId(url) {
+            // 各種Facebook網址格式
+            let match;
+            
+            // 格式1: /posts/123456
+            match = url.match(/\/posts\/(\d+)/);
+            if (match) return match[1];
+            
+            // 格式2: /p/ABC123
+            match = url.match(/\/p\/([A-Za-z0-9]+)/);
+            if (match) return match[1];
+            
+            // 格式3: 純數字或ID
+            match = url.match(/(\d{10,})/);
+            if (match) return match[1];
+            
+            return url; // 嘗試原樣使用
+        }
+        
+        // 解析粉專ID
+        function parsePageId(url) {
+            const match = url.match(/facebook\.com\/([^\/\?]+)/);
+            return match ? match[1] : url;
+        }
+        
+        // 顯示結果
+        function displayResults(comments, posts) {
+            const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+            
+            document.getElementById('step4').classList.remove('hidden');
+            document.getElementById('totalComments').textContent = comments.length;
+            document.getElementById('totalPosts').textContent = posts.length;
+            document.getElementById('scrapeTime').textContent = duration;
+            
+            allComments = comments;
+            renderComments();
+        }
+        
+        // 渲染留言
+        function renderComments(filtered = null) {
+            const display = document.getElementById('commentsDisplay');
+            const data = filtered || allComments;
+            
+            if (data.length === 0) {
+                display.innerHTML = '<p style="text-align:center;padding:40px;color:#6c757d;">沒有留言資料</p>';
+                return;
+            }
+            
+            display.innerHTML = data.map(c => `
+                <div class="comment-item">
+                    <div class="comment-header">
+                        <span class="commenter">${c.from?.name || '未知使用者'}</span>
+                        <span style="font-size:12px;color:#6c757d;">${formatTime(c.created_time)}</span>
+                    </div>
+                    <div class="comment-content">${c.message || ''}</div>
+                    <div style="font-size:12px;color:#6c757d;margin-top:8px;">
+                        👍 ${c.like_count || 0} | 來源：${c.sourcePost || '未知'}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // 篩選
+        function filterComments() {
+            const keyword = document.getElementById('searchBox')?.value.toLowerCase();
+            if (!keyword) {
+                renderComments();
+                return;
+            }
+            
+            const filtered = allComments.filter(c => 
+                (c.message && c.message.toLowerCase().includes(keyword)) ||
+                (c.from?.name && c.from.name.toLowerCase().includes(keyword))
+            );
+            renderComments(filtered);
+        }
+        
+        // 匯出Excel
+        function exportExcel() {
+            if (allComments.length === 0) {
+                alert('沒有資料可匯出');
+                return;
+            }
+            
+            const exportData = allComments.map(c => ({
+                '留言者': c.from?.name || '未知',
+                '留言內容': c.message || '',
+                '時間': formatTime(c.created_time),
+                '按讚數': c.like_count || 0,
+                '來源': c.sourcePost || ''
+            }));
+            
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, '留言資料');
+            
+            ws['!cols'] = [{wch:20},{wch:50},{wch:20},{wch:10},{wch:30}];
+            
+            const timestamp = new Date().toISOString().slice(0,16).replace('T','_').replace(/:/g,'');
+            XLSX.writeFile(wb, `Facebook留言_${timestamp}.xlsx`);
+            
+            showAlert('📥 Excel已下載', 'success');
+        }
+        
+        // 複製
+        function copyAll() {
+            if (allComments.length === 0) {
+                alert('沒有資料');
+                return;
+            }
+            
+            const text = allComments.map(c => 
+                `${c.from?.name}\t${c.message}\t${formatTime(c.created_time)}\t${c.like_count}`
+            ).join('\n');
+            
+            navigator.clipboard.writeText('留言者\t留言內容\t時間\t按讚數\n' + text);
+            showAlert(`✅ 已複製 ${allComments.length} 則留言`, 'success');
+        }
+        
+        // 工具函數
+        function formatTime(time) {
+            if (!time) return '';
+            return new Date(time).toLocaleString('zh-TW');
+        }
+        
+        function showProgress(percent, text, type = 'info') {
+            document.getElementById('progressBar').style.width = percent + '%';
+            document.getElementById('progressBar').textContent = Math.round(percent) + '%';
+            const className = type === 'error' ? 'alert-error' : 'alert-info';
+            document.getElementById('progressDetails').innerHTML = `<div class="alert ${className}">${text}</div>`;
+        }
+        
+        function showAlert(msg, type, duration = 2000) {
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = msg;
+            alert.style.position = 'fixed';
+            alert.style.top = '20px';
+            alert.style.right = '20px';
+            alert.style.zIndex = '9999';
+            document.body.appendChild(alert);
+            setTimeout(() => alert.remove(), duration);
+        }
+        
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+        
+        // 載入儲存的Token
+        window.addEventListener('load', () => {
+            const saved = localStorage.getItem('fb_token');
+            if (saved) {
+                document.getElementById('tokenInput').value = saved;
+                showAlert('💡 已載入上次使用的Token', 'info');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>社群留言編輯工具 - 展示版</title>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Microsoft JhengHei", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 16px;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .upload-section {
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .upload-section:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        
+        .upload-section.dragover {
+            border-color: #667eea;
+            background: #e3e8ff;
+            transform: scale(1.02);
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: white;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-success {
+            background: #10b981;
+        }
+        
+        .btn-success:hover {
+            background: #059669;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .btn-danger {
+            background: #ef4444;
+        }
+        
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+        
+        .toolbar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .search-box:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .stats {
+            display: flex;
+            gap: 20px;
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        thead {
+            background: #f8f9fa;
+            position: sticky;
+            top: 0;
+        }
+        
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #495057;
+            border-bottom: 2px solid #dee2e6;
+        }
+        
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f1f3f5;
+        }
+        
+        tbody tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .editable {
+            cursor: text;
+            min-height: 20px;
+        }
+        
+        .editable:hover {
+            background: #fff3cd;
+        }
+        
+        .editable:focus {
+            outline: 2px solid #667eea;
+            background: white;
+        }
+        
+        .checkbox {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        
+        .alert {
+            padding: 15px 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .alert-success {
+            background: #d1fae5;
+            color: #065f46;
+            border-left: 4px solid #10b981;
+        }
+        
+        .alert-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border-left: 4px solid #ef4444;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.show {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        .modal-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 社群留言編輯工具</h1>
+            <p>上傳 CSV/Excel 檔案 或 載入範例資料 - 立即開始整理和分析留言</p>
+        </div>
+        
+        <div class="content">
+            <!-- 上傳區域 -->
+            <div class="upload-section" id="uploadArea">
+                <h3 style="margin-bottom: 15px;">📁 拖放檔案到此處 或 點擊選擇檔案</h3>
+                <p style="color: #6c757d; margin-bottom: 20px;">支援格式：CSV, Excel (.xlsx), JSON</p>
+                <input type="file" id="fileInput" accept=".csv,.xlsx,.xls,.json">
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                        📂 選擇檔案
+                    </button>
+                    <button class="btn btn-success" onclick="loadSampleData()">
+                        ✨ 載入範例資料
+                    </button>
+                    <button class="btn btn-secondary" onclick="showPasteModal()">
+                        📝 手動貼上
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 提示訊息 -->
+            <div id="alertArea"></div>
+            
+            <!-- 統計 -->
+            <div class="stats" id="stats" style="display: none;">
+                <div class="stat-item">
+                    <span class="stat-label">總留言數</span>
+                    <span class="stat-value" id="totalCount">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">顯示中</span>
+                    <span class="stat-value" id="displayCount">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">已選取</span>
+                    <span class="stat-value" id="selectedCount">0</span>
+                </div>
+            </div>
+            
+            <!-- 工具列 -->
+            <div class="toolbar" id="toolbar" style="display: none;">
+                <input type="text" class="search-box" id="searchBox" placeholder="🔍 搜尋留言內容...">
+                <button class="btn btn-danger" onclick="deleteSelected()">🗑️ 刪除選取</button>
+                <button class="btn btn-secondary" onclick="undo()">↶ 復原</button>
+                <button class="btn btn-success" onclick="exportToExcel()">📥 匯出 Excel</button>
+                <button class="btn btn-secondary" onclick="clearAll()">🔄 清除全部</button>
+            </div>
+            
+            <!-- 表格 -->
+            <div class="table-container" id="tableContainer" style="display: none;">
+                <table id="commentsTable">
+                    <thead>
+                        <tr>
+                            <th width="50"><input type="checkbox" class="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
+                            <th width="150">留言者</th>
+                            <th>留言內容</th>
+                            <th width="180">時間</th>
+                            <th width="80">按讚數</th>
+                            <th width="100">來源</th>
+                        </tr>
+                    </thead>
+                    <tbody id="commentsBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 貼上資料 Modal -->
+    <div class="modal" id="pasteModal">
+        <div class="modal-content">
+            <div class="modal-title">📝 貼上留言資料</div>
+            <p style="color: #6c757d; margin-bottom: 15px; font-size: 14px;">
+                支援 JSON 格式或 CSV 格式（每行：留言者,內容,時間,按讚數）
+            </p>
+            <textarea id="pasteArea" rows="10" style="width: 100%; padding: 10px; border: 1px solid #dee2e6; border-radius: 6px; font-family: monospace; font-size: 12px;" placeholder='[{"commenter":"王小明","content":"很棒","time":"2025-11-19 10:00","likes":5}]'></textarea>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closePasteModal()">取消</button>
+                <button class="btn btn-primary" onclick="importPastedData()">匯入</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 資料儲存
+        let comments = [];
+        let history = [];
+        const MAX_HISTORY = 10;
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            setupDragDrop();
+            setupFileInput();
+            setupSearch();
+            loadFromLocalStorage();
+        });
+        
+        // 拖放設定
+        function setupDragDrop() {
+            const area = document.getElementById('uploadArea');
+            
+            area.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                area.classList.add('dragover');
+            });
+            
+            area.addEventListener('dragleave', () => {
+                area.classList.remove('dragover');
+            });
+            
+            area.addEventListener('drop', (e) => {
+                e.preventDefault();
+                area.classList.remove('dragover');
+                const file = e.dataTransfer.files[0];
+                if (file) handleFile(file);
+            });
+        }
+        
+        // 檔案選擇設定
+        function setupFileInput() {
+            document.getElementById('fileInput').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) handleFile(file);
+            });
+        }
+        
+        // 處理檔案
+        function handleFile(file) {
+            const fileName = file.name.toLowerCase();
+            
+            if (fileName.endsWith('.csv')) {
+                parseCSV(file);
+            } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+                parseExcel(file);
+            } else if (fileName.endsWith('.json')) {
+                parseJSON(file);
+            } else {
+                showAlert('不支援的檔案格式。請上傳 CSV、Excel 或 JSON 檔案。', 'error');
+            }
+        }
+        
+        // 解析 CSV
+        function parseCSV(file) {
+            Papa.parse(file, {
+                header: true,
+                encoding: 'UTF-8',
+                complete: (results) => {
+                    const data = results.data.filter(row => row.留言內容 || row.content || row.message);
+                    const normalized = data.map((row, index) => ({
+                        id: Date.now() + index,
+                        commenter: row.留言者 || row.commenter || row.username || row.user || '未知使用者',
+                        content: row.留言內容 || row.content || row.message || row.text || '',
+                        time: row.時間 || row.time || row.timestamp || row.created_time || new Date().toLocaleString('zh-TW'),
+                        likes: parseInt(row.按讚數 || row.likes || row.like_count || 0),
+                        source: file.name,
+                        selected: false
+                    }));
+                    
+                    importComments(normalized);
+                    showAlert(`✅ 成功匯入 ${normalized.length} 則留言`, 'success');
+                },
+                error: () => {
+                    showAlert('❌ CSV 解析失敗，請檢查檔案格式', 'error');
+                }
+            });
+        }
+        
+        // 解析 Excel
+        function parseExcel(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                    
+                    const normalized = jsonData.map((row, index) => ({
+                        id: Date.now() + index,
+                        commenter: row.留言者 || row.commenter || row.username || '未知使用者',
+                        content: row.留言內容 || row.content || row.message || '',
+                        time: row.時間 || row.time || row.timestamp || new Date().toLocaleString('zh-TW'),
+                        likes: parseInt(row.按讚數 || row.likes || 0),
+                        source: file.name,
+                        selected: false
+                    }));
+                    
+                    importComments(normalized);
+                    showAlert(`✅ 成功匯入 ${normalized.length} 則留言（來自 Excel）`, 'success');
+                } catch (error) {
+                    showAlert('❌ Excel 解析失敗：' + error.message, 'error');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+        
+        // 解析 JSON
+        function parseJSON(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    const normalized = data.map((row, index) => ({
+                        id: Date.now() + index,
+                        commenter: row.commenter || row.username || row.user || '未知使用者',
+                        content: row.content || row.message || row.text || '',
+                        time: row.time || row.timestamp || row.created_time || new Date().toLocaleString('zh-TW'),
+                        likes: parseInt(row.likes || row.like_count || 0),
+                        source: file.name,
+                        selected: false
+                    }));
+                    
+                    importComments(normalized);
+                    showAlert(`✅ 成功匯入 ${normalized.length} 則留言（來自 JSON）`, 'success');
+                } catch (error) {
+                    showAlert('❌ JSON 解析失敗：' + error.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        // 載入範例資料
+        function loadSampleData() {
+            const sampleComments = [
+                { commenter: '王小明', content: '這個產品真的很不錯！用了之後效率提升很多 👍', time: '2025-11-18 10:30', likes: 15 },
+                { commenter: '李小華', content: '非常滿意這次的服務，客服回應很快速', time: '2025-11-18 11:00', likes: 8 },
+                { commenter: '張大明', content: '品質很好，價格也合理，會推薦給朋友', time: '2025-11-18 12:00', likes: 12 },
+                { commenter: '陳小芳', content: '請問有其他顏色可以選擇嗎？', time: '2025-11-18 13:15', likes: 3 },
+                { commenter: '林志明', content: '出貨速度很快，包裝也很仔細！', time: '2025-11-18 14:20', likes: 6 },
+                { commenter: 'Amy Chen', content: 'Great product! Highly recommended! 🌟', time: '2025-11-18 15:30', likes: 20 },
+                { commenter: '黃小美', content: '用了一週，效果符合預期，讚！', time: '2025-11-18 16:45', likes: 9 },
+                { commenter: '吳大勇', content: '有點小貴，但物超所值', time: '2025-11-19 09:00', likes: 4 },
+                { commenter: '劉小婷', content: '第二次購買了，品質穩定', time: '2025-11-19 10:00', likes: 7 },
+                { commenter: 'John Lee', content: 'Customer service is excellent! 👏', time: '2025-11-19 11:00', likes: 11 }
+            ];
+            
+            const normalized = sampleComments.map((c, i) => ({
+                id: Date.now() + i,
+                commenter: c.commenter,
+                content: c.content,
+                time: c.time,
+                likes: c.likes,
+                source: '範例資料',
+                selected: false
+            }));
+            
+            importComments(normalized);
+            showAlert('✨ 已載入 10 則範例留言，您可以立即開始編輯和匯出！', 'success');
+        }
+        
+        // 匯入留言
+        function importComments(data) {
+            saveHistory();
+            comments = data;
+            renderTable();
+            updateStats();
+            saveToLocalStorage();
+            document.getElementById('toolbar').style.display = 'flex';
+            document.getElementById('tableContainer').style.display = 'block';
+            document.getElementById('stats').style.display = 'flex';
+        }
+        
+        // 渲染表格
+        function renderTable(filteredComments = null) {
+            const tbody = document.getElementById('commentsBody');
+            const data = filteredComments || comments;
+            
+            tbody.innerHTML = data.map(comment => `
+                <tr data-id="${comment.id}">
+                    <td><input type="checkbox" class="checkbox" ${comment.selected ? 'checked' : ''} onchange="toggleSelect(${comment.id})"></td>
+                    <td contenteditable="true" class="editable" onblur="updateComment(${comment.id}, 'commenter', this.innerText)">${comment.commenter}</td>
+                    <td contenteditable="true" class="editable" onblur="updateComment(${comment.id}, 'content', this.innerText)">${comment.content}</td>
+                    <td contenteditable="true" class="editable" onblur="updateComment(${comment.id}, 'time', this.innerText)">${comment.time}</td>
+                    <td contenteditable="true" class="editable" onblur="updateComment(${comment.id}, 'likes', parseInt(this.innerText))">${comment.likes}</td>
+                    <td>${comment.source}</td>
+                </tr>
+            `).join('');
+            
+            updateStats(data);
+        }
+        
+        // 更新留言
+        function updateComment(id, field, value) {
+            saveHistory();
+            const comment = comments.find(c => c.id === id);
+            if (comment) {
+                comment[field] = value;
+                saveToLocalStorage();
+                showAlert('✅ 已儲存', 'success', 1000);
+            }
+        }
+        
+        // 切換選取
+        function toggleSelect(id) {
+            const comment = comments.find(c => c.id === id);
+            if (comment) {
+                comment.selected = !comment.selected;
+                updateStats();
+            }
+        }
+        
+        // 全選/取消全選
+        function toggleSelectAll() {
+            const checked = document.getElementById('selectAll').checked;
+            comments.forEach(c => c.selected = checked);
+            renderTable();
+        }
+        
+        // 刪除選取
+        function deleteSelected() {
+            const selectedCount = comments.filter(c => c.selected).length;
+            if (selectedCount === 0) {
+                showAlert('請先選取要刪除的留言', 'error');
+                return;
+            }
+            
+            if (confirm(`確定要刪除 ${selectedCount} 則留言嗎？`)) {
+                saveHistory();
+                comments = comments.filter(c => !c.selected);
+                renderTable();
+                saveToLocalStorage();
+                showAlert(`✅ 已刪除 ${selectedCount} 則留言`, 'success');
+            }
+        }
+        
+        // 搜尋
+        function setupSearch() {
+            document.getElementById('searchBox')?.addEventListener('input', (e) => {
+                const keyword = e.target.value.toLowerCase();
+                if (!keyword) {
+                    renderTable();
+                    return;
+                }
+                
+                const filtered = comments.filter(c => 
+                    c.content.toLowerCase().includes(keyword) ||
+                    c.commenter.toLowerCase().includes(keyword)
+                );
+                renderTable(filtered);
+            });
+        }
+        
+        // 復原
+        function undo() {
+            if (history.length === 0) {
+                showAlert('沒有可復原的操作', 'error');
+                return;
+            }
+            
+            comments = history.pop();
+            renderTable();
+            saveToLocalStorage();
+            showAlert('↶ 已復原', 'success', 1000);
+        }
+        
+        // 儲存歷史
+        function saveHistory() {
+            history.push(JSON.parse(JSON.stringify(comments)));
+            if (history.length > MAX_HISTORY) {
+                history.shift();
+            }
+        }
+        
+        // 匯出 Excel
+        function exportToExcel() {
+            if (comments.length === 0) {
+                showAlert('沒有資料可以匯出', 'error');
+                return;
+            }
+            
+            const exportData = comments.map(c => ({
+                '留言者': c.commenter,
+                '留言內容': c.content,
+                '時間': c.time,
+                '按讚數': c.likes,
+                '來源': c.source
+            }));
+            
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, '留言資料');
+            
+            // 設定欄位寬度
+            ws['!cols'] = [
+                { wch: 15 },  // 留言者
+                { wch: 50 },  // 留言內容
+                { wch: 20 },  // 時間
+                { wch: 10 },  // 按讚數
+                { wch: 15 }   // 來源
+            ];
+            
+            const timestamp = new Date().toISOString().slice(0,16).replace('T', '_').replace(/:/g, '');
+            XLSX.writeFile(wb, `留言資料_${timestamp}.xlsx`);
+            
+            showAlert('📥 Excel 檔案已下載', 'success');
+        }
+        
+        // 更新統計
+        function updateStats(displayData = null) {
+            const data = displayData || comments;
+            document.getElementById('totalCount').textContent = comments.length;
+            document.getElementById('displayCount').textContent = data.length;
+            document.getElementById('selectedCount').textContent = comments.filter(c => c.selected).length;
+        }
+        
+        // 顯示提示
+        function showAlert(message, type = 'success', duration = 3000) {
+            const alertArea = document.getElementById('alertArea');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            alertArea.appendChild(alert);
+            
+            setTimeout(() => alert.remove(), duration);
+        }
+        
+        // Modal 控制
+        function showPasteModal() {
+            document.getElementById('pasteModal').classList.add('show');
+        }
+        
+        function closePasteModal() {
+            document.getElementById('pasteModal').classList.remove('show');
+        }
+        
+        // 匯入貼上的資料
+        function importPastedData() {
+            const text = document.getElementById('pasteArea').value.trim();
+            if (!text) return;
+            
+            try {
+                // 嘗試 JSON
+                const data = JSON.parse(text);
+                const normalized = data.map((row, index) => ({
+                    id: Date.now() + index,
+                    commenter: row.commenter || row.username || '未知',
+                    content: row.content || row.message || '',
+                    time: row.time || row.timestamp || new Date().toLocaleString('zh-TW'),
+                    likes: parseInt(row.likes || 0),
+                    source: '手動貼上',
+                    selected: false
+                }));
+                
+                importComments(normalized);
+                closePasteModal();
+                showAlert(`✅ 成功匯入 ${normalized.length} 則留言`, 'success');
+            } catch (e) {
+                // 嘗試 CSV 文字
+                Papa.parse(text, {
+                    header: true,
+                    complete: (results) => {
+                        const normalized = results.data.map((row, index) => ({
+                            id: Date.now() + index,
+                            commenter: row.留言者 || row.commenter || '未知',
+                            content: row.留言內容 || row.content || '',
+                            time: row.時間 || row.time || new Date().toLocaleString('zh-TW'),
+                            likes: parseInt(row.按讚數 || row.likes || 0),
+                            source: '手動貼上',
+                            selected: false
+                        }));
+                        
+                        importComments(normalized);
+                        closePasteModal();
+                        showAlert(`✅ 成功匯入 ${normalized.length} 則留言`, 'success');
+                    }
+                });
+            }
+        }
+        
+        // 清除全部
+        function clearAll() {
+            if (comments.length === 0) return;
+            
+            if (confirm(`確定要清除全部 ${comments.length} 則留言嗎？此操作無法復原。`)) {
+                saveHistory();
+                comments = [];
+                renderTable();
+                saveToLocalStorage();
+                document.getElementById('toolbar').style.display = 'none';
+                document.getElementById('tableContainer').style.display = 'none';
+                document.getElementById('stats').style.display = 'none';
+                showAlert('🔄 已清除所有資料', 'success');
+            }
+        }
+        
+        // LocalStorage
+        function saveToLocalStorage() {
+            try {
+                localStorage.setItem('comments', JSON.stringify(comments));
+            } catch (e) {
+                showAlert('⚠️ 儲存失敗：儲存空間可能不足', 'error');
+            }
+        }
+        
+        function loadFromLocalStorage() {
+            try {
+                const saved = localStorage.getItem('comments');
+                if (saved) {
+                    comments = JSON.parse(saved);
+                    if (comments.length > 0) {
+                        renderTable();
+                        document.getElementById('toolbar').style.display = 'flex';
+                        document.getElementById('tableContainer').style.display = 'block';
+                        document.getElementById('stats').style.display = 'flex';
+                        showAlert(`✅ 已載入 ${comments.length} 則留言（來自上次工作階段）`, 'success');
+                    }
+                }
+            } catch (e) {
+                console.error('載入失敗', e);
+            }
+        }
+        
+        // 鍵盤快捷鍵
+        document.addEventListener('keydown', (e) => {
+            // Ctrl+Z 復原
+            if (e.ctrlKey && e.key === 'z') {
+                e.preventDefault();
+                undo();
+            }
+            // Ctrl+S 儲存（實際上自動儲存）
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                saveToLocalStorage();
+                showAlert('💾 已儲存', 'success', 1000);
+            }
+        });
+    </script>
+</body>
+</html>

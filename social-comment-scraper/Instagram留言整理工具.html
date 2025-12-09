@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instagram 留言整理工具</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Microsoft JhengHei", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 { font-size: 32px; margin-bottom: 10px; }
+        .header p { opacity: 0.9; }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        
+        .tab:hover { background: #f9fafb; }
+        .tab.active { border-bottom-color: #667eea; color: #667eea; }
+        
+        .tab-content { display: none; padding: 30px; }
+        .tab-content.active { display: block; }
+        
+        .guide-box {
+            background: #f0f9ff;
+            border-left: 4px solid #3b82f6;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+        }
+        
+        .guide-box h3 {
+            color: #1e40af;
+            margin-bottom: 15px;
+        }
+        
+        .guide-box ol, .guide-box ul {
+            margin-left: 20px;
+            line-height: 1.8;
+        }
+        
+        .guide-box code {
+            background: #dbeafe;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: vertical;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: white;
+            margin: 5px;
+        }
+        
+        .btn-primary { background: #667eea; }
+        .btn-primary:hover { background: #5568d3; transform: translateY(-2px); }
+        .btn-success { background: #10b981; }
+        .btn-success:hover { background: #059669; }
+        .btn-info { background: #0ea5e9; }
+        .btn-warning { background: #f59e0b; }
+        
+        .template-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 13px;
+            white-space: pre;
+            overflow-x: auto;
+        }
+        
+        .alert {
+            padding: 15px 20px;
+            border-radius: 6px;
+            margin: 15px 0;
+            border-left: 4px solid;
+        }
+        
+        .alert-success { background: #d1fae5; color: #065f46; border-color: #10b981; }
+        .alert-info { background: #dbeafe; color: #1e40af; border-color: #3b82f6; }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        thead { background: #f8f9fa; position: sticky; top: 0; }
+        th { padding: 12px; text-align: left; font-weight: 600; border-bottom: 2px solid #dee2e6; }
+        td { padding: 10px 12px; border-bottom: 1px solid #f1f3f5; }
+        tbody tr:hover { background: #f8f9fa; }
+        
+        .editable { cursor: text; min-height: 20px; }
+        .editable:hover { background: #fff3cd; }
+        .editable:focus { outline: 2px solid #667eea; background: white; }
+        
+        .stats {
+            display: flex;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-card {
+            flex: 1;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        .stat-value { font-size: 32px; font-weight: bold; color: #667eea; }
+        .stat-label { font-size: 14px; color: #6c757d; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📸 Instagram 留言整理工具</h1>
+            <p>簡單、快速、不需要API設定 - 立即開始整理您的IG留言</p>
+        </div>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab(0)">📖 使用說明</div>
+            <div class="tab" onclick="switchTab(1)">📝 貼上留言</div>
+            <div class="tab" onclick="switchTab(2)">📊 整理編輯</div>
+        </div>
+        
+        <!-- Tab 1: 使用說明 -->
+        <div class="tab-content active">
+            <div class="guide-box">
+                <h3>🎯 工具功能</h3>
+                <ul>
+                    <li>整理Instagram留言資料（不需要API或Token）</li>
+                    <li>支援貼上或上傳留言資料</li>
+                    <li>線上編輯、搜尋、分類</li>
+                    <li>一鍵匯出Excel（繁體中文無亂碼）</li>
+                    <li>完全在瀏覽器執行，資料不外傳</li>
+                </ul>
+            </div>
+            
+            <div class="guide-box">
+                <h3>📋 如何收集Instagram留言（3種方法）</h3>
+                
+                <h4>方法1: 網頁版複製（推薦）</h4>
+                <ol>
+                    <li>用電腦瀏覽器打開Instagram網頁版：<code>instagram.com</code></li>
+                    <li>前往您的貼文或帳號</li>
+                    <li>點擊任一貼文查看留言</li>
+                    <li>按<code>Ctrl+A</code>全選，<code>Ctrl+C</code>複製</li>
+                    <li>貼到本工具的「貼上留言」分頁</li>
+                    <li>點擊「智能解析」</li>
+                </ol>
+                
+                <h4>方法2: 手機App複製</h4>
+                <ol>
+                    <li>Instagram App中打開貼文</li>
+                    <li>長按留言可以複製</li>
+                    <li>或截圖後用OCR工具轉文字</li>
+                </ol>
+                
+                <h4>方法3: 使用瀏覽器擴充套件（最快）</h4>
+                <ol>
+                    <li>安裝Chrome擴充：「IG留言匯出工具」（搜尋Instagram comment export）</li>
+                    <li>前往貼文頁面</li>
+                    <li>點擊擴充套件圖示</li>
+                    <li>匯出為CSV或JSON</li>
+                    <li>上傳到本工具</li>
+                </ol>
+            </div>
+            
+            <div class="guide-box">
+                <h3>📝 支援的資料格式</h3>
+                <p><strong>格式1: 標準CSV</strong></p>
+                <div class="template-box">留言者,留言內容,時間,按讚數
+王小明,很棒的照片,2025-11-18 10:00,5
+李小華,喜歡這個風格,2025-11-18 11:00,3</div>
+                
+                <p><strong>格式2: JSON</strong></p>
+                <div class="template-box">[
+  {"user":"王小明","comment":"很棒的照片","time":"2025-11-18 10:00","likes":5}
+]</div>
+                
+                <p><strong>格式3: 純文字（自動解析）</strong></p>
+                <div class="template-box">王小明
+很棒的照片
+10小時前
+5個讚
+
+李小華  
+喜歡這個風格
+11小時前
+3個讚</div>
+            </div>
+            
+            <button class="btn btn-success" onclick="switchTab(1)" style="font-size: 16px; padding: 15px 30px;">
+                🚀 開始使用
+            </button>
+        </div>
+        
+        <!-- Tab 2: 貼上留言 -->
+        <div class="tab-content">
+            <div class="alert alert-info">
+                💡 提示：複製Instagram留言後，貼到下方文字框，點擊「智能解析」即可自動整理
+            </div>
+            
+            <div style="margin: 20px 0;">
+                <button class="btn btn-warning" onclick="loadSample()">✨ 載入範例資料（快速體驗）</button>
+                <button class="btn btn-info" onclick="showTemplate()">📋 顯示貼上格式範本</button>
+            </div>
+            
+            <textarea id="pasteArea" placeholder="在此貼上從Instagram複製的留言資料...
+
+支援格式：
+1. 直接從IG複製的文字
+2. CSV格式（留言者,留言內容,時間,按讚數）
+3. JSON格式
+
+貼上後點擊下方「智能解析」按鈕"></textarea>
+            
+            <div style="margin-top: 20px;">
+                <button class="btn btn-primary" onclick="smartParse()">🤖 智能解析</button>
+                <button class="btn btn-success" onclick="parseCSV()">📊 解析為CSV</button>
+                <button class="btn btn-info" onclick="parseJSON()">🔧 解析為JSON</button>
+            </div>
+            
+            <div id="parseResult"></div>
+        </div>
+        
+        <!-- Tab 3: 整理編輯 -->
+        <div class="tab-content">
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalCount">0</div>
+                    <div class="stat-label">總留言數</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="selectedCount">0</div>
+                    <div class="stat-label">已選取</div>
+                </div>
+            </div>
+            
+            <div style="margin: 20px 0; display: flex; gap: 10px; flex-wrap: wrap;">
+                <input type="text" id="searchBox" placeholder="🔍 搜尋留言..." 
+                    style="flex: 1; min-width: 200px; padding: 10px; border: 2px solid #dee2e6; border-radius: 6px;"
+                    onkeyup="filterComments()">
+                <button class="btn btn-success" onclick="exportExcel()">📥 匯出Excel</button>
+                <button class="btn btn-info" onclick="copyAll()">📋 複製全部</button>
+                <button class="btn btn-warning" onclick="addCustomField()">➕ 新增欄位</button>
+                <button class="btn" style="background: #ef4444;" onclick="deleteSelected()">🗑️ 刪除選取</button>
+            </div>
+            
+            <div id="tableContainer" style="display: none; overflow-x: auto; border: 1px solid #dee2e6; border-radius: 6px; max-height: 600px; overflow-y: auto;">
+                <table id="commentsTable">
+                    <thead>
+                        <tr>
+                            <th width="40"><input type="checkbox" id="selectAll" onchange="toggleAll()"></th>
+                            <th width="120">留言者</th>
+                            <th>留言內容</th>
+                            <th width="150">時間</th>
+                            <th width="80">按讚數</th>
+                            <th width="150">來源貼文</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody"></tbody>
+                </table>
+            </div>
+            
+            <div id="emptyState" style="text-align: center; padding: 60px 20px; color: #6c757d;">
+                <div style="font-size: 48px; margin-bottom: 20px;">📝</div>
+                <h3>還沒有留言資料</h3>
+                <p style="margin-top: 10px;">請前往「貼上留言」分頁匯入資料</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let comments = [];
+        let customFields = [];
+        let currentTab = 0;
+        
+        // Tab切換
+        function switchTab(index) {
+            document.querySelectorAll('.tab').forEach((tab, i) => {
+                tab.classList.toggle('active', i === index);
+            });
+            document.querySelectorAll('.tab-content').forEach((content, i) => {
+                content.classList.toggle('active', i === index);
+            });
+            currentTab = index;
+        }
+        
+        // 載入範例
+        function loadSample() {
+            const sample = `user123,很棒的照片！值得收藏 👍,2025-11-18 10:30,25,貼文1
+photo_lover,你的攝影技術真的很專業,2025-11-18 11:00,18,貼文1
+creative_soul,構圖和光影都處理得很好,2025-11-18 12:15,12,貼文2
+amy_chen,Great shot! Love it! 🌟,2025-11-18 13:20,32,貼文2
+designer_tw,色彩搭配很舒服,2025-11-18 14:00,9,貼文3
+travel_girl,請問這是在哪裡拍的？,2025-11-18 15:30,7,貼文3
+john_lee,Incredible work! 📸,2025-11-18 16:00,28,貼文4
+local_fan,一直很喜歡你的作品,2025-11-19 09:00,14,貼文4
+photo_student,可以分享後製技巧嗎？,2025-11-19 10:00,6,貼文5
+art_lover,每次都能帶來驚喜,2025-11-19 11:00,22,貼文5`;
+            
+            document.getElementById('pasteArea').value = sample;
+            parseCSV();
+            switchTab(2);
+        }
+        
+        // 顯示範本
+        function showTemplate() {
+            alert(`貼上格式範本：
+
+格式1 - CSV（推薦）：
+留言者,留言內容,時間,按讚數,貼文
+user1,留言內容...,2025-11-18 10:00,5,貼文1
+user2,另一則留言...,2025-11-18 11:00,3,貼文1
+
+格式2 - Tab分隔（從Excel複製）：
+留言者	留言內容	時間	按讚數
+user1	留言內容...	2025-11-18 10:00	5
+
+格式3 - JSON：
+[{"user":"user1","content":"留言...","time":"2025-11-18 10:00","likes":5}]
+
+直接貼上，工具會自動識別格式！`);
+        }
+        
+        // 智能解析
+        function smartParse() {
+            const text = document.getElementById('pasteArea').value.trim();
+            if (!text) {
+                alert('請先貼上留言資料');
+                return;
+            }
+            
+            // 嘗試JSON
+            try {
+                JSON.parse(text);
+                parseJSON();
+                return;
+            } catch (e) {}
+            
+            // 嘗試CSV
+            if (text.includes(',') || text.includes('\t')) {
+                parseCSV();
+                return;
+            }
+            
+            // 純文字解析
+            parseText();
+        }
+        
+        // 解析CSV
+        function parseCSV() {
+            const text = document.getElementById('pasteArea').value.trim();
+            const lines = text.split('\n').filter(l => l.trim());
+            
+            // 檢查是否有標題列
+            const hasHeader = lines[0].includes('留言者') || lines[0].includes('user') || lines[0].includes('commenter');
+            const startIndex = hasHeader ? 1 : 0;
+            
+            const separator = text.includes('\t') ? '\t' : ',';
+            
+            comments = lines.slice(startIndex).map((line, index) => {
+                const parts = line.split(separator).map(p => p.trim());
+                return {
+                    id: Date.now() + index,
+                    user: parts[0] || '未知',
+                    content: parts[1] || '',
+                    time: parts[2] || new Date().toLocaleString('zh-TW'),
+                    likes: parseInt(parts[3]) || 0,
+                    source: parts[4] || '未分類',
+                    selected: false,
+                    customFields: {}
+                };
+            });
+            
+            showSuccess(`✅ 成功解析 ${comments.length} 則留言`);
+            renderTable();
+            switchTab(2);
+            save();
+        }
+        
+        // 解析JSON
+        function parseJSON() {
+            try {
+                const text = document.getElementById('pasteArea').value.trim();
+                const data = JSON.parse(text);
+                
+                comments = data.map((item, index) => ({
+                    id: Date.now() + index,
+                    user: item.user || item.username || item.commenter || '未知',
+                    content: item.content || item.comment || item.text || item.message || '',
+                    time: item.time || item.timestamp || item.date || new Date().toLocaleString('zh-TW'),
+                    likes: parseInt(item.likes || item.like_count || 0),
+                    source: item.source || item.post || '未分類',
+                    selected: false,
+                    customFields: {}
+                }));
+                
+                showSuccess(`✅ 成功解析 ${comments.length} 則留言（JSON格式）`);
+                renderTable();
+                switchTab(2);
+                save();
+            } catch (e) {
+                alert('JSON格式錯誤：' + e.message);
+            }
+        }
+        
+        // 解析純文字
+        function parseText() {
+            const text = document.getElementById('pasteArea').value.trim();
+            const blocks = text.split('\n\n').filter(b => b.trim());
+            
+            comments = blocks.map((block, index) => {
+                const lines = block.split('\n').map(l => l.trim());
+                return {
+                    id: Date.now() + index,
+                    user: lines[0] || '未知',
+                    content: lines[1] || block,
+                    time: lines[2] || new Date().toLocaleString('zh-TW'),
+                    likes: 0,
+                    source: '未分類',
+                    selected: false,
+                    customFields: {}
+                };
+            });
+            
+            showSuccess(`✅ 解析 ${comments.length} 則留言（文字格式）`);
+            renderTable();
+            switchTab(2);
+            save();
+        }
+        
+        // 渲染表格
+        function renderTable(filtered = null) {
+            const data = filtered || comments;
+            const tbody = document.getElementById('tbody');
+            
+            if (data.length === 0) {
+                document.getElementById('tableContainer').style.display = 'none';
+                document.getElementById('emptyState').style.display = 'block';
+                return;
+            }
+            
+            document.getElementById('tableContainer').style.display = 'block';
+            document.getElementById('emptyState').style.display = 'none';
+            
+            // 生成標題（包含自訂欄位）
+            const thead = document.querySelector('thead tr');
+            const baseHeaders = '<th width="40"><input type="checkbox" id="selectAll" onchange="toggleAll()"></th><th width="120">留言者</th><th>留言內容</th><th width="150">時間</th><th width="80">按讚數</th><th width="150">來源貼文</th>';
+            const customHeaders = customFields.map(f => `<th width="120">${f}</th>`).join('');
+            thead.innerHTML = baseHeaders + customHeaders;
+            
+            tbody.innerHTML = data.map((c, i) => {
+                const customCells = customFields.map(f => `<td contenteditable class="editable" onblur="updateCustomField(${c.id}, '${f}', this.innerText)">${c.customFields[f] || ''}</td>`).join('');
+                
+                return `<tr>
+                    <td><input type="checkbox" ${c.selected ? 'checked' : ''} onchange="toggleSelect(${c.id})"></td>
+                    <td contenteditable class="editable" onblur="update(${c.id}, 'user', this.innerText)">${c.user}</td>
+                    <td contenteditable class="editable" onblur="update(${c.id}, 'content', this.innerText)">${c.content}</td>
+                    <td contenteditable class="editable" onblur="update(${c.id}, 'time', this.innerText)">${c.time}</td>
+                    <td contenteditable class="editable" onblur="update(${c.id}, 'likes', this.innerText)">${c.likes}</td>
+                    <td contenteditable class="editable" onblur="update(${c.id}, 'source', this.innerText)">${c.source}</td>
+                    ${customCells}
+                </tr>`;
+            }).join('');
+            
+            updateStats();
+        }
+        
+        // 更新資料
+        function update(id, field, value) {
+            const c = comments.find(x => x.id === id);
+            if (c) {
+                c[field] = field === 'likes' ? parseInt(value) || 0 : value;
+                save();
+                showSuccess('✅ 已儲存', 1000);
+            }
+        }
+        
+        function updateCustomField(id, field, value) {
+            const c = comments.find(x => x.id === id);
+            if (c) {
+                c.customFields[field] = value;
+                save();
+                showSuccess('✅ 已儲存', 1000);
+            }
+        }
+        
+        // 切換選取
+        function toggleSelect(id) {
+            const c = comments.find(x => x.id === id);
+            if (c) c.selected = !c.selected;
+            updateStats();
+        }
+        
+        function toggleAll() {
+            const checked = document.getElementById('selectAll').checked;
+            comments.forEach(c => c.selected = checked);
+            renderTable();
+        }
+        
+        // 刪除選取
+        function deleteSelected() {
+            const count = comments.filter(c => c.selected).length;
+            if (count === 0) {
+                alert('請先選取要刪除的留言');
+                return;
+            }
+            
+            if (confirm(`確定要刪除 ${count} 則留言嗎？`)) {
+                comments = comments.filter(c => !c.selected);
+                renderTable();
+                save();
+                showSuccess(`✅ 已刪除 ${count} 則留言`);
+            }
+        }
+        
+        // 搜尋篩選
+        function filterComments() {
+            const keyword = document.getElementById('searchBox')?.value.toLowerCase();
+            if (!keyword) {
+                renderTable();
+                return;
+            }
+            
+            const filtered = comments.filter(c => 
+                c.content.toLowerCase().includes(keyword) ||
+                c.user.toLowerCase().includes(keyword)
+            );
+            renderTable(filtered);
+        }
+        
+        // 新增自訂欄位
+        function addCustomField() {
+            const name = prompt('請輸入欄位名稱（例如：客戶類型、回應狀態）：');
+            if (name && !customFields.includes(name)) {
+                customFields.push(name);
+                renderTable();
+                save();
+                showSuccess(`✅ 已新增欄位「${name}」`);
+            }
+        }
+        
+        // 匯出Excel
+        function exportExcel() {
+            if (comments.length === 0) {
+                alert('沒有資料可匯出');
+                return;
+            }
+            
+            const exportData = comments.map(c => {
+                const base = {
+                    '留言者': c.user,
+                    '留言內容': c.content,
+                    '時間': c.time,
+                    '按讚數': c.likes,
+                    '來源貼文': c.source
+                };
+                
+                customFields.forEach(f => {
+                    base[f] = c.customFields[f] || '';
+                });
+                
+                return base;
+            });
+            
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, '留言資料');
+            
+            const timestamp = new Date().toISOString().slice(0,16).replace('T', '_').replace(/:/g, '');
+            XLSX.writeFile(wb, `Instagram留言整理_${timestamp}.xlsx`);
+            
+            showSuccess('📥 Excel已下載');
+        }
+        
+        // 複製全部
+        function copyAll() {
+            if (comments.length === 0) {
+                alert('沒有資料可複製');
+                return;
+            }
+            
+            const header = ['留言者', '留言內容', '時間', '按讚數', '來源貼文', ...customFields].join('\t');
+            const rows = comments.map(c => {
+                const base = [c.user, c.content, c.time, c.likes, c.source];
+                const custom = customFields.map(f => c.customFields[f] || '');
+                return [...base, ...custom].join('\t');
+            });
+            
+            const text = [header, ...rows].join('\n');
+            navigator.clipboard.writeText(text);
+            showSuccess(`✅ 已複製 ${comments.length} 則留言（可直接貼到Excel）`);
+        }
+        
+        // 更新統計
+        function updateStats() {
+            document.getElementById('totalCount').textContent = comments.length;
+            document.getElementById('selectedCount').textContent = comments.filter(c => c.selected).length;
+        }
+        
+        // 提示訊息
+        function showSuccess(msg, duration = 2000) {
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-success';
+            alert.textContent = msg;
+            alert.style.position = 'fixed';
+            alert.style.top = '20px';
+            alert.style.right = '20px';
+            alert.style.zIndex = '9999';
+            document.body.appendChild(alert);
+            setTimeout(() => alert.remove(), duration);
+        }
+        
+        // 儲存
+        function save() {
+            localStorage.setItem('comments', JSON.stringify(comments));
+            localStorage.setItem('customFields', JSON.stringify(customFields));
+        }
+        
+        // 載入
+        window.addEventListener('load', () => {
+            const saved = localStorage.getItem('comments');
+            const fields = localStorage.getItem('customFields');
+            
+            if (saved) {
+                comments = JSON.parse(saved);
+                customFields = JSON.parse(fields || '[]');
+                if (comments.length > 0) {
+                    renderTable();
+                    switchTab(2);
+                    showSuccess(`✅ 已載入 ${comments.length} 則留言（上次工作階段）`, 3000);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
